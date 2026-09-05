@@ -74,25 +74,32 @@ graph LR
 
 ---
 
-## 🎓 How Learning Works (GitHub Classroom Workflow)
+## 🎓 How Learning Works (Template & Real-World Portfolio Workflow)
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Student as Student
-    participant Classroom as GitHub Classroom
-    participant Repo as Student Private Repo
+    participant Template as High Q Template Repo
+    participant Personal as Student Personal Repo
     participant Actions as GitHub Actions Runner
     actor Tutor as High Q Tutors
 
-    Student->>Classroom: Accepts Assignment Link
-    Classroom->>Repo: Creates private repo from Course Template
-    Student->>Repo: Clones repo & completes lab exercises
-    Student->>Repo: Pushes code (git push origin main)
-    Repo->>Actions: Triggers Autograding Workflow
-    Actions-->>Student: Displays Pass/Fail checks & PR grade badge
-    Tutor-->>Student: Reviews code and issues High Q Certificate
+    Student->>Template: Clicks "Use this template"
+    Template->>Personal: Generates personal student repository
+    Student->>Personal: Clones locally & completes lab exercises
+    Student->>Personal: Pushes solution (git push origin main)
+    Personal->>Actions: Automatically triggers Verification Workflow
+    Actions-->>Student: Instant Pass/Fail test results & green badge
+    Student->>Tutor: Submits repository link for code review
+    Tutor-->>Student: Reviews implementation & awards High Q Certificate
 ```
+
+### 3 Simple Steps for Every Student:
+1. **Generate Your Copy**: Open any course repository above and click the green **"Use this template"** button to create your own copy under your personal GitHub profile.
+2. **Code & Push**: Clone your repository to your computer, work through the hands-on exercises in VS Code, and push your commits.
+3. **Instant Automated Feedback**: Every push automatically runs our High Q GitHub Actions suite to verify your HTML semantics, CSS rules, or JavaScript algorithms in real time!
+
 
 ---
 

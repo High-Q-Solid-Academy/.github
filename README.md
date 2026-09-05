@@ -51,16 +51,27 @@ Through our **Digital Skills & Web Development Division**, we equip students wit
 
 ---
 
-## 🚀 Web Development & Software Engineering Curriculum
+## 🚀 Full-Stack Web Development & Software Engineering Curriculum
 
-Our 4-part software engineering foundation takes you from Git version control to full client-side web application development.
+Our 8-part software engineering program takes you from your first terminal command to architecting enterprise full-stack web applications with automated testing.
 
 ```mermaid
-graph LR
-    A["1. Git & GitHub<br/>(course-git-github)"] --> B["2. HTML5 Foundations<br/>(course-html-foundations)"]
-    B --> C["3. CSS3 Mastery<br/>(course-css-mastery)"]
-    C --> D["4. JavaScript Core<br/>(course-javascript-core)"]
-    D --> E["🎓 Certified Junior Developer<br/>High Q Solid Academy"]
+graph TD
+    subgraph "Level 1: Foundations & Version Control"
+        T1["01. Git & GitHub"] --> T2["02. HTML5 Foundations"]
+        T2 --> T3["03. CSS3 Mastery"]
+        T3 --> T4["04. JavaScript Core & DOM"]
+    end
+
+    subgraph "Level 2: Backend & Database Engineering"
+        T4 --> T5["05. PHP 8 & MySQL (REST APIs)"]
+        T4 --> T6["06. Node.js & Express (REST APIs)"]
+    end
+
+    subgraph "Level 3: Modern Frontend & Enterprise"
+        T4 --> T7["07. React.js Modern Architecture"]
+        T7 --> T8["08. React with TypeScript (Enterprise)"]
+    end
 ```
 
 ### 📚 Course Repositories & Verification Engines
@@ -71,6 +82,11 @@ graph LR
 | **02. HTML Foundations** | [`course-html-foundations`](https://github.com/High-Q-Solid-Academy/course-html-foundations) | Semantic tags, accessible forms, tables, SEO meta | Headless DOM & W3C validation tests |
 | **03. CSS Mastery** | [`course-css-mastery`](https://github.com/High-Q-Solid-Academy/course-css-mastery) | Flexbox, CSS Grid, mobile-first queries, animations | Stylelint syntax & responsive layout assertion tests |
 | **04. JavaScript Core** | [`course-javascript-core`](https://github.com/High-Q-Solid-Academy/course-javascript-core) | ES6+, arrays/objects, DOM manipulation, Async/Fetch | Vitest test suite with instant score reports |
+| **05. PHP & MySQL** | [`course-php-backend`](https://github.com/High-Q-Solid-Academy/course-php-backend) | PHP 8, PDO, SQL CRUD, JSON APIs, session auth | PHP backend verification test runner |
+| **06. Node.js & Express** | [`course-nodejs-backend`](https://github.com/High-Q-Solid-Academy/course-nodejs-backend) | Express, middleware, REST APIs, JWT authentication | Node.js & Express autograding test runner |
+| **07. React.js Mastery** | [`course-reactjs-mastery`](https://github.com/High-Q-Solid-Academy/course-reactjs-mastery) | Vite, JSX, Hooks (`useState`, `useEffect`), SPAs | React component assertion test runner |
+| **08. React with TypeScript** | [`course-react-ts-enterprise`](https://github.com/High-Q-Solid-Academy/course-react-ts-enterprise) | Generics, interfaces, typed props, API contracts | TypeScript compiler type-check & test runner |
+
 
 ---
 

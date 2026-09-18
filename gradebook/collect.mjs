@@ -85,8 +85,16 @@ for (const repository of repositories) {
     const identity = await resolveIdentity(repository, definition);
     const status = await api(`/repos/${organization}/${repository.name}/commits/${repository.default_branch}/status`);
     const gradeStatus = status.statuses.find((item) => item.context === 'highq/autograding');
+    const humanStatus = status.statuses.find((item) => item.context === 'highq/human-capstone');
     const match = gradeStatus?.description?.match(/(\d+)\s*\/\s*100/);
     const score = match ? Number(match[1]) : null;
+    const humanMatch = humanStatus?.description?.match(/(\d+)\s*\/\s*100/);
+    const humanScore = humanMatch ? Number(humanMatch[1]) : null;
+    const automatedPassed = Number.isFinite(score) && gradeStatus?.state === 'success' && score >= definition.passScore;
+    const humanPassed = !definition.humanReviewRequired || (Number.isFinite(humanScore) && humanStatus?.state === 'success' && humanScore >= (definition.humanPassScore || 70));
+    const finalScore = definition.humanReviewRequired
+      ? (Number.isFinite(score) && Number.isFinite(humanScore) ? Math.round((score + humanScore) / 2) : null)
+      : score;
     rows.push({
       order: definition.order,
       course: definition.course,
@@ -94,7 +102,13 @@ for (const repository of repositories) {
       ...identity,
       repository: repository.name,
       score,
-      passed: Number.isFinite(score) && gradeStatus?.state === 'success' && score >= definition.passScore,
+      automatedPassed,
+      humanReviewRequired: Boolean(definition.humanReviewRequired),
+      humanScore,
+      humanState: humanStatus?.state || (definition.humanReviewRequired ? 'not-submitted' : 'not-required'),
+      humanPassed,
+      finalScore,
+      passed: automatedPassed && humanPassed,
       state: gradeStatus?.state || 'not-graded',
       updatedAt: gradeStatus?.updated_at || repository.updated_at,
       url: repository.html_url,
@@ -111,6 +125,12 @@ for (const repository of repositories) {
       identityState: 'error',
       repository: repository.name,
       score: null,
+      automatedPassed: false,
+      humanReviewRequired: Boolean(definition.humanReviewRequired),
+      humanScore: null,
+      humanState: definition.humanReviewRequired ? 'error' : 'not-required',
+      humanPassed: !definition.humanReviewRequired,
+      finalScore: null,
       passed: false,
       state: 'error',
       updatedAt: repository.updated_at,
@@ -124,22 +144,22 @@ for (const repository of repositories) {
 rows.sort((a, b) => a.realName.localeCompare(b.realName) || a.order - b.order);
 fs.writeFileSync(path.join(root, 'gradebook.json'), `${JSON.stringify({ organization, generatedAt: new Date().toISOString(), rows }, null, 2)}\n`);
 
-const headers = ['Real Name', 'GitHub Username', 'GitHub ID', 'Identity', 'Course', 'Repository', 'Score', 'Pass Mark', 'Passed', 'State', 'Updated At', 'Repository URL', 'Details URL'];
-const csvRows = rows.map((row) => [row.realName, row.student, row.githubId ?? '', row.identityState, row.course, row.repository, row.score ?? '', row.passScore, row.passed ? 'Yes' : 'No', row.state, row.updatedAt, row.url, row.detailsUrl]);
+const headers = ['Real Name', 'GitHub Username', 'GitHub ID', 'Identity', 'Course', 'Repository', 'Automated Score', 'Human Score', 'Final Score', 'Pass Mark', 'Passed', 'Automated State', 'Human State', 'Updated At', 'Repository URL', 'Details URL'];
+const csvRows = rows.map((row) => [row.realName, row.student, row.githubId ?? '', row.identityState, row.course, row.repository, row.score ?? '', row.humanScore ?? '', row.finalScore ?? '', row.passScore, row.passed ? 'Yes' : 'No', row.state, row.humanState, row.updatedAt, row.url, row.detailsUrl]);
 fs.writeFileSync(path.join(root, 'gradebook.csv'), `${[headers, ...csvRows].map((row) => row.map(csvCell).join(',')).join('\n')}\n`);
 
-const scored = rows.filter((row) => Number.isFinite(row.score));
-const average = scored.length ? Math.round(scored.reduce((sum, row) => sum + row.score, 0) / scored.length) : 0;
+const scored = rows.filter((row) => Number.isFinite(row.finalScore));
+const average = scored.length ? Math.round(scored.reduce((sum, row) => sum + row.finalScore, 0) / scored.length) : 0;
 const tableRows = rows.slice(0, 100).map((row) =>
-  `| ${row.realName} | [@${row.student}](${row.url}) | ${row.course} | ${row.score ?? '—'}/100 | ${row.passed ? 'Passed' : row.state} | ${row.identityState} | [Details](${row.detailsUrl}) |`
+  `| ${row.realName} | [@${row.student}](${row.url}) | ${row.course} | ${row.score ?? '—'} | ${row.humanReviewRequired ? (row.humanScore ?? 'pending') : 'not required'} | ${row.finalScore ?? '—'} | ${row.passed ? 'Passed' : 'In progress'} | ${row.identityState} | [Details](${row.detailsUrl}) |`
 ).join('\n');
 const summary = `# High Q instructor gradebook
 
 **${new Set(rows.map((row) => row.githubId || row.student)).size} learners** · **${rows.length} course repositories** · **${scored.length} graded** · **${average}% average**
 
-| Real name | GitHub | Course | Score | Result | Identity | Run |
-| --- | --- | --- | ---: | --- | --- | --- |
-${tableRows || '| — | — | No matching learner repositories found | — | — | — | — |'}
+| Real name | GitHub | Course | Auto | Human | Final | Result | Identity | Run |
+| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |
+${tableRows || '| — | — | No matching learner repositories found | — | — | — | — | — | — |'}
 
 Download the print-ready HTML, CSV, or JSON from this run's **Artifacts** section. Identity warnings require instructor review.
 `;

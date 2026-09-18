@@ -1,0 +1,69 @@
+name: Record capstone human review
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: Learner's current GitHub username
+        required: true
+        type: string
+      course_gate:
+        description: Capstone milestone being reviewed
+        required: true
+        type: choice
+        options:
+          - php
+          - python
+          - react-typescript
+          - node
+      functionality:
+        description: Functionality and completeness (0-20)
+        required: true
+        type: string
+      code_quality:
+        description: Code quality and architecture (0-20)
+        required: true
+        type: string
+      ux_api:
+        description: User experience or API design (0-20)
+        required: true
+        type: string
+      security:
+        description: Security, validation and reliability (0-20)
+        required: true
+        type: string
+      documentation:
+        description: Documentation and deployment quality (0-20)
+        required: true
+        type: string
+      feedback:
+        description: Specific human-review feedback for the learner
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Publish instructor capstone score
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Record rubric and progression status
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          STUDENT_USERNAME: ${{ inputs.username }}
+          COURSE_ID: ${{ inputs.course_gate }}
+          SCORE_FUNCTIONALITY: ${{ inputs.functionality }}
+          SCORE_CODE_QUALITY: ${{ inputs.code_quality }}
+          SCORE_UX_API: ${{ inputs.ux_api }}
+          SCORE_SECURITY: ${{ inputs.security }}
+          SCORE_DOCUMENTATION: ${{ inputs.documentation }}
+          REVIEW_FEEDBACK: ${{ inputs.feedback }}
+        run: node gradebook/record-capstone-review.mjs

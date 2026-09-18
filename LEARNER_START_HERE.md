@@ -28,6 +28,17 @@ Do not create copies of the academy's master course repositories. Your instructo
 
 You begin with **Git & GitHub Foundations**. You must earn at least **70/100** before the next private course is released.
 
+Four major stage transitions also require a deployed project and human review:
+
+| Completed stage | Required deployed capstone | Unlocks |
+| --- | --- | --- |
+| HTML, CSS, JavaScript, PHP and MySQL | Full-stack website | Python |
+| Python | Production Python web application or API | React |
+| React and React TypeScript | Production frontend application | Node.js and Express |
+| Node.js and Express | Production backend API or full-stack service | AI and Prompt Engineering |
+
+At these milestones, an automated exercise score alone does not unlock the next course.
+
 ## Accept and clone your assigned course
 
 After enrollment, open your GitHub notifications and accept the repository invitation if GitHub displays one. Your first repository is named like:
@@ -77,6 +88,20 @@ After a passing pull request is approved and merged into `main`, GitHub grades `
 
 The same process repeats for every course: learn, practise, test, push, open a pull request, receive a score, correct mistakes and pass.
 
+## Submitting a major capstone
+
+When a course contains `CAPSTONE.md`:
+
+1. Build the complete project described in that file inside your assigned repository.
+2. Merge the reviewed version to `main` and deploy the same commit to a public HTTPS address.
+3. Open **Actions → Submit capstone for human review → Run workflow** in that repository.
+4. Enter the HTTPS GitHub URL of the assigned repository, the live deployment URL and a detailed project summary.
+5. Run the workflow. It checks that the GitHub URL belongs to the assigned repository, confirms the live site responds and opens a private review issue.
+6. Demonstrate the project to the instructor and wait for the five-part human rubric.
+7. If revision is required, fix the project, redeploy and submit again.
+
+Both the automated course score and human capstone score must be at least 70/100. The report shows automated, human and combined final scores separately.
+
 ## How your results are recorded
 
 Your report connects your real profile name, current GitHub username and permanent GitHub account ID. It shows every course score and pass status. The academy keeps downloadable digital records and print-ready report cards.
@@ -90,4 +115,3 @@ If you change your GitHub username, inform your instructor. Do not remove or rep
 - Confirm that you accepted the academy organization invitation.
 - Ask the instructor to verify the exact spelling of your GitHub username.
 - Do not create a personal fork as a workaround.
-

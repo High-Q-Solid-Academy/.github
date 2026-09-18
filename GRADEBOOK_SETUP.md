@@ -80,6 +80,26 @@ Do not ask learners to fork or clone the master template into their own personal
 
 Learners still clone their assigned private academy repository to their computers for normal work. The important distinction is that the authoritative remote repository remains under the academy organization, not under the learner's personal account.
 
+## Human-reviewed capstone gates
+
+The curriculum requires human review after PHP/MySQL, Python, React TypeScript and Node/Express. Each of those templates contains `CAPSTONE.md` and **Submit capstone for human review**.
+
+The learner runs the submission workflow with the assigned GitHub repository URL, public HTTPS deployment URL and project summary. The workflow rejects a different repository URL, confirms the deployment responds, creates a private review issue and publishes a pending `highq/human-capstone` status.
+
+The instructor tests the live application, reviews its source and then opens **Actions → Record capstone human review → Run workflow** in the `.github` repository. Select the milestone and enter five scores from 0 to 20:
+
+1. Functionality and completeness.
+2. Code quality and architecture.
+3. User experience or API design.
+4. Security, validation and reliability.
+5. Documentation and deployment quality.
+
+Add specific written feedback. The workflow totals the score, comments on the learner's private submission issue and publishes the authoritative `highq/human-capstone` status. A score below 70 keeps the issue and next course open for revision. A score of at least 70 closes the review issue as completed.
+
+At a human-review milestone, `unlock-next-course.mjs` requires both `highq/autograding` and `highq/human-capstone` to be successful at 70 or higher. The instructor gradebook and emailed report display automated, human and final combined scores separately.
+
+Deployment may use any instructor-approved public HTTPS provider. Vercel is recommended for React/Vite frontends. PHP should use PHP/cPanel hosting, Railway or a Docker service such as Render. Render or Railway are suitable for Python and Node/Express services. Never accept a submission containing committed production credentials or real personal data.
+
 ## Classroom 50
 
 GitHub Classroom was retired on August 28, 2026. For new classes, use Classroom 50 for roster management, assignment acceptance and its web dashboard. These course repositories can remain the starter/template content; the numeric grade contract added here is also usable without the retired GitHub Classroom application.

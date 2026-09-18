@@ -42,7 +42,9 @@
     "template": "course-php-backend",
     "repositoryPrefix": "course-php-backend-",
     "prerequisite": "javascript",
-    "passScore": 70
+    "passScore": 70,
+    "humanReviewRequired": true,
+    "humanPassScore": 70
   },
   {
     "order": 6,
@@ -51,7 +53,9 @@
     "template": "course-python-automation",
     "repositoryPrefix": "course-python-automation-",
     "prerequisite": "php",
-    "passScore": 70
+    "passScore": 70,
+    "humanReviewRequired": true,
+    "humanPassScore": 70
   },
   {
     "order": 7,
@@ -69,7 +73,9 @@
     "template": "course-react-ts-enterprise",
     "repositoryPrefix": "course-react-ts-enterprise-",
     "prerequisite": "react",
-    "passScore": 70
+    "passScore": 70,
+    "humanReviewRequired": true,
+    "humanPassScore": 70
   },
   {
     "order": 9,
@@ -78,7 +84,9 @@
     "template": "course-nodejs-backend",
     "repositoryPrefix": "course-nodejs-backend-",
     "prerequisite": "react-typescript",
-    "passScore": 70
+    "passScore": 70,
+    "humanReviewRequired": true,
+    "humanPassScore": 70
   },
   {
     "order": 10,

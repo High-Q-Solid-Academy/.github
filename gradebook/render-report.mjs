@@ -18,21 +18,21 @@ for (const row of data.rows) {
   learners.get(key).rows.push(row);
 }
 
-const scored = data.rows.filter((row) => Number.isFinite(row.score));
-const average = scored.length ? Math.round(scored.reduce((sum, row) => sum + row.score, 0) / scored.length) : 0;
+const scored = data.rows.filter((row) => Number.isFinite(row.finalScore));
+const average = scored.length ? Math.round(scored.reduce((sum, row) => sum + row.finalScore, 0) / scored.length) : 0;
 const passed = scored.filter((row) => row.passed).length;
 const generated = new Intl.DateTimeFormat('en-NG', { dateStyle: 'full', timeStyle: 'short', timeZone: 'Africa/Lagos' }).format(new Date(data.generatedAt));
 
 const reportCards = [...learners.values()].sort((a, b) => a.name.localeCompare(b.name)).map((learner) => {
   const rows = learner.rows.sort((a, b) => a.order - b.order);
-  const learnerScored = rows.filter((row) => Number.isFinite(row.score));
-  const learnerAverage = learnerScored.length ? Math.round(learnerScored.reduce((sum, row) => sum + row.score, 0) / learnerScored.length) : 0;
+  const learnerScored = rows.filter((row) => Number.isFinite(row.finalScore));
+  const learnerAverage = learnerScored.length ? Math.round(learnerScored.reduce((sum, row) => sum + row.finalScore, 0) / learnerScored.length) : 0;
   const identityWarning = rows.some((row) => row.identityState !== 'verified');
   return `<section class="report-card">
     <header><div><span class="eyebrow">Learner report</span><h2>${escapeHtml(learner.name)}</h2><p>@${escapeHtml(learner.login)} · GitHub ID ${escapeHtml(learner.id || 'unavailable')}</p></div><div class="score ${learnerAverage >= 70 ? 'pass' : 'attention'}">${learnerAverage}<small>/100 average</small></div></header>
     ${identityWarning ? '<p class="warning">⚠ Identity needs instructor review. The GitHub profile name or account ID no longer matches the protected enrollment record.</p>' : ''}
-    <table><thead><tr><th>Course</th><th>Score</th><th>Result</th><th>Last graded</th></tr></thead><tbody>
-      ${rows.map((row) => `<tr><td>${escapeHtml(row.course)}</td><td>${Number.isFinite(row.score) ? `${row.score}/100` : 'Not graded'}</td><td><span class="pill ${row.passed ? 'passed' : 'pending'}">${row.passed ? 'Passed' : escapeHtml(row.state)}</span></td><td>${escapeHtml(row.updatedAt || '—')}</td></tr>`).join('')}
+    <table><thead><tr><th>Course</th><th>Automated</th><th>Human</th><th>Final</th><th>Result</th><th>Last graded</th></tr></thead><tbody>
+      ${rows.map((row) => `<tr><td>${escapeHtml(row.course)}</td><td>${Number.isFinite(row.score) ? `${row.score}/100` : 'Not graded'}</td><td>${row.humanReviewRequired ? (Number.isFinite(row.humanScore) ? `${row.humanScore}/100` : 'Pending') : 'Not required'}</td><td>${Number.isFinite(row.finalScore) ? `${row.finalScore}/100` : 'Pending'}</td><td><span class="pill ${row.passed ? 'passed' : 'pending'}">${row.passed ? 'Passed' : 'In progress'}</span></td><td>${escapeHtml(row.updatedAt || '—')}</td></tr>`).join('')}
     </tbody></table>
     <footer>High Q Solid Academy · Generated ${escapeHtml(generated)} · Instructor signature: ____________________</footer>
   </section>`;

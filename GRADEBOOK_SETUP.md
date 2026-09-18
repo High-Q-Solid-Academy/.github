@@ -20,11 +20,12 @@ Prefixes are configured in [`gradebook/courses.json`](gradebook/courses.json). C
 
 ## One-time organization setup
 
-1. Create a fine-grained GitHub personal access token from an organization-owned service account.
-2. Give the gradebook token read access to **Contents**, **Metadata** and **Commit statuses** for the student repositories.
-3. In the `High-Q-Solid-Academy/.github` repository, open **Settings → Secrets and variables → Actions**.
-4. Add the token as a repository secret named `GRADEBOOK_TOKEN`.
-5. Open **Actions → Collect High Q student grades → Run workflow**.
+1. In organization **Settings → Member privileges**, set the base repository permission to **None** and disable member-created organization repositories. Otherwise organization members can see every private course template and bypass the progression lock.
+2. Create a fine-grained GitHub personal access token from an organization-owned service account.
+3. Give the gradebook token read access to **Contents**, **Metadata** and **Commit statuses** for the student repositories.
+4. In the `High-Q-Solid-Academy/.github` repository, open **Settings → Secrets and variables → Actions**.
+5. Add the token as a repository secret named `GRADEBOOK_TOKEN`.
+6. Open **Actions → Collect High Q student grades → Run workflow**.
 
 ## One-time locked-progression setup
 

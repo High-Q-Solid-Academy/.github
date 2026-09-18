@@ -115,6 +115,8 @@ sequenceDiagram
 3. **Use the feedback:** GitHub Actions returns a numeric grade and a module-by-module report after every push.
 4. **Advance after passing:** At 70% or higher, automation creates the next private course repository and sends a new collaborator invitation.
 
+New learners should follow the complete [High Q learner start guide](../LEARNER_START_HERE.md).
+
 ---
 
 ## 🛠 Tech Stack & Tools

@@ -63,6 +63,8 @@ For Gmail or Google Workspace, enable two-step verification on the sending mailb
 | `REPORT_EMAIL_FROM` | Usually the same address as `REPORT_SMTP_USERNAME` |
 | `REPORT_EMAIL_RECIPIENTS` | `akintunde.dolapo1@gmail.com,highqsol@highqsolidacademy.com,highqsolidacademy@gmail.com` |
 
+Outgoing reports display **High Q Digital Training** as the sender name. Recipients are placed in `Bcc` and the visible `To` header is `undisclosed-recipients:;`, so recipients cannot see one another's email addresses.
+
 If any required email secret is absent, report collection still succeeds and clearly records that email was skipped. Open **Actions → Collect High Q student grades → latest run → Artifacts → highq-instructor-gradebook** to download the files. If SMTP authentication fails, the email step fails but the artifact upload still runs because it is independent; use **Re-run failed jobs** after correcting the secrets.
 
 Never store the app password, learner personal details or recipient list directly in a workflow file. The real-name enrollment record belongs only in each private learner repository.

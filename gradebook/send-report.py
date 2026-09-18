@@ -2,6 +2,7 @@ import os
 import smtplib
 import ssl
 from email.message import EmailMessage
+from email.headerregistry import Address
 from pathlib import Path
 
 
@@ -21,12 +22,15 @@ host = required('REPORT_SMTP_HOST') or 'smtp.gmail.com'
 port = int(required('REPORT_SMTP_PORT') or '465')
 security = (required('REPORT_SMTP_SECURITY') or ('ssl' if port == 465 else 'starttls')).lower()
 sender = required('REPORT_EMAIL_FROM') or username
+sender_name = required('REPORT_EMAIL_FROM_NAME') or 'High Q Digital Training'
 root = Path(__file__).resolve().parent.parent
 
 message = EmailMessage()
 message['Subject'] = 'High Q Solid Academy — Instructor Gradebook'
-message['From'] = sender
-message['To'] = ', '.join(recipients)
+message['From'] = Address(display_name=sender_name, addr_spec=sender)
+message['To'] = 'undisclosed-recipients:;'
+message['Bcc'] = ', '.join(recipients)
+message['Reply-To'] = Address(display_name=sender_name, addr_spec=sender)
 message.set_content('The current High Q instructor gradebook is attached in print-ready HTML, CSV, and JSON formats. Open the HTML file in a browser and print it for paper records or save it as PDF.')
 message.add_alternative('<h2>High Q Solid Academy</h2><p>The current instructor gradebook is attached in <strong>print-ready HTML</strong>, CSV, and JSON formats.</p><p>Open <code>gradebook.html</code> in a browser and print it for paper records or save it as PDF.</p>', subtype='html')
 
@@ -54,4 +58,4 @@ elif security in ('ssl', 'smtps'):
 else:
     raise ValueError('REPORT_SMTP_SECURITY must be starttls/tls or ssl/smtps.')
 
-print(f'Gradebook email sent to {len(recipients)} configured recipient(s).')
+print(f'Gradebook email sent by {sender_name} to {len(recipients)} private Bcc recipient(s).')

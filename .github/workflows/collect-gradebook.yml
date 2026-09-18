@@ -39,6 +39,7 @@ jobs:
           REPORT_SMTP_USERNAME: ${{ secrets.REPORT_SMTP_USERNAME }}
           REPORT_SMTP_PASSWORD: ${{ secrets.REPORT_SMTP_PASSWORD }}
           REPORT_EMAIL_FROM: ${{ secrets.REPORT_EMAIL_FROM }}
+          REPORT_EMAIL_FROM_NAME: High Q Digital Training
           REPORT_EMAIL_RECIPIENTS: ${{ secrets.REPORT_EMAIL_RECIPIENTS }}
         run: python3 gradebook/send-report.py
 

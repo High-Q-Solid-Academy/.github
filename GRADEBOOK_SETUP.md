@@ -41,6 +41,8 @@ Each private learner repository contains `.highq/enrollment.json` on protected `
 
 Generated repositories protect `main`: learners submit a pull request, the `Calculate course score` check must pass, one instructor approval is required, stale approvals are dismissed, and force-pushes/deletions are blocked. This prevents a learner from quietly replacing the tests or grading workflow on the graded branch. If the workflow summary reports branch protection as unavailable, check the organization's GitHub plan and repository rules before relying on the score.
 
+> **Private-repository plan requirement:** GitHub Free for organizations does not support protected branches on private repositories. The course-hiding system still works, but authoritative anti-tamper enforcement on private learner repositories requires GitHub Team, GitHub Enterprise Cloud or an eligible GitHub Education benefit. On GitHub Free, treat automated scores as provisional: review the learner's commits and grading-file diff before accepting a result, and do not approve changes to workflows, tests, scripts, package manifests or `.highq/enrollment.json`.
+
 Keep `GRADEBOOK_TOKEN` read-only. Do not reuse the more powerful curriculum administration token for gradebook collection.
 
 The workflow also runs daily at 7:15 PM West Africa Time. The summary lists each learner's real name, current GitHub username, immutable GitHub ID, course, score, identity status and details link. The complete records are available as the `highq-instructor-gradebook` artifact. Download `gradebook.html`, open it in a browser and use **Print** for paper records or **Save as PDF** for a digital signed copy.

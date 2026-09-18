@@ -30,7 +30,7 @@ Prefixes are configured in [`gradebook/courses.json`](gradebook/courses.json). C
 
 1. Make every course source repository a GitHub **template repository**.
 2. Make course templates and generated learner repositories **private**. A public template cannot be hidden from learners, so it cannot enforce the requested lock.
-3. Create a separate fine-grained service-account token able to read commit statuses, create organization repositories from templates, manage repository collaborators and administer branch protection.
+3. Create a separate fine-grained service-account token with access to all academy course repositories. Under **Repository permissions**, select **Administration: Read and write**, **Contents: Read and write**, and **Commit statuses: Read-only**. Metadata read access is included automatically. GitHub has no separate "Collaborator management" permission: adding a repository collaborator, creating repositories and configuring branch protection are covered by **Administration: Read and write**.
 4. Store it in this repository as `CURRICULUM_ADMIN_TOKEN`.
 5. Before enrollment, ask the learner to open **GitHub → Settings → Public profile → Name** and enter their real first name and surname.
 6. To start a learner, run **Actions → Enroll learner in first course**, enter the exact GitHub username and the same real name. Enrollment stops if the names do not match. Ask the learner to accept the collaborator invitation.

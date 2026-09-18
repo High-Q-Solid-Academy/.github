@@ -98,22 +98,26 @@ sequenceDiagram
     participant Actions as GitHub Actions Runner
     actor Tutor as High Q Tutors
 
-    Unlock->>Personal: Releases Git course to new learner
-    Student->>Personal: Clones locally & completes lab exercises
-    Student->>Personal: Pushes solution (git push origin main)
-    Personal->>Actions: Automatically triggers Verification Workflow
+    Student->>Unlock: Confirms real profile name and GitHub username
+    Unlock->>Personal: Creates private Git course and sends invitation
+    Student->>Personal: Accepts invitation and clones assigned repository
+    Student->>Personal: Pushes a lesson branch and opens a pull request
+    Personal->>Actions: Runs the verification workflow on the pull request
     Actions-->>Student: Numeric score and module feedback
     Actions-->>Unlock: Publishes highq/autograding status
-    Unlock->>Unlock: Checks score is at least 70%
+    Tutor->>Personal: Reviews and merges passing work
+    Unlock->>Unlock: Checks score and required human review
     Unlock->>Personal: Creates and invites learner to next private course
 ```
 
 ### The learner workflow
 
-1. **Accept the invitation:** The learner receives access only to the currently unlocked private course repository.
-2. **Learn, code and push:** Read the beginner notes, follow the guided video index, complete the exercises and push commits.
-3. **Use the feedback:** GitHub Actions returns a numeric grade and a module-by-module report after every push.
-4. **Advance after passing:** At 70% or higher, automation creates the next private course repository and sends a new collaborator invitation.
+1. **Prepare identity:** Put your real first name and surname in the GitHub profile **Name** field and give the instructor your exact username.
+2. **Accept invitations:** Join the organization and accept only the private course repository released to you.
+3. **Learn on a branch:** Read the beginner guide, watch the matching lesson, complete the exercise, and open a pull request.
+4. **Use the feedback:** GitHub Actions returns a numeric grade and module-by-module guidance; correct work on the same branch.
+5. **Request human review:** An instructor reviews passing work and merges approved changes.
+6. **Advance after passing:** When all required gates pass, automation creates the next private course repository and sends a new invitation.
 
 New learners should follow the complete [High Q learner start guide](../LEARNER_START_HERE.md).
 

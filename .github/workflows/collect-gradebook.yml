@@ -1,0 +1,53 @@
+name: Collect High Q student grades
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 18 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  gradebook:
+    name: Build instructor gradebook
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gradebook configuration
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Collect latest student scores
+        env:
+          GRADEBOOK_TOKEN: ${{ secrets.GRADEBOOK_TOKEN }}
+          GRADEBOOK_ORG: High-Q-Solid-Academy
+        run: node gradebook/collect.mjs
+
+      - name: Create styled printable report
+        run: node gradebook/render-report.mjs
+
+      - name: Email instructor reports when SMTP is configured
+        env:
+          REPORT_SMTP_HOST: ${{ secrets.REPORT_SMTP_HOST }}
+          REPORT_SMTP_PORT: ${{ secrets.REPORT_SMTP_PORT }}
+          REPORT_SMTP_SECURITY: ${{ secrets.REPORT_SMTP_SECURITY }}
+          REPORT_SMTP_USERNAME: ${{ secrets.REPORT_SMTP_USERNAME }}
+          REPORT_SMTP_PASSWORD: ${{ secrets.REPORT_SMTP_PASSWORD }}
+          REPORT_EMAIL_FROM: ${{ secrets.REPORT_EMAIL_FROM }}
+          REPORT_EMAIL_RECIPIENTS: ${{ secrets.REPORT_EMAIL_RECIPIENTS }}
+        run: python3 gradebook/send-report.py
+
+      - name: Upload instructor gradebook
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: highq-instructor-gradebook
+          path: |
+            gradebook.csv
+            gradebook.json
+            gradebook.html
+          retention-days: 90

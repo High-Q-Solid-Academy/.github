@@ -1,4 +1,3 @@
-
 <div align="center">
 
 # 🌟 High Q Solid Academy Limited
@@ -54,25 +53,20 @@ Through our **Digital Skills & Web Development Division**, we equip students wit
 
 ## 🚀 Full-Stack Web Development & Software Engineering Curriculum
 
-Our 8-part software engineering program takes you from your first terminal command to architecting enterprise full-stack web applications with automated testing.
+Our locked 11-course program takes a complete beginner from the first terminal command through full-stack engineering, responsible AI and defensive security. Each private course is released only after the learner reaches the 70% pass mark in its prerequisite.
 
 ```mermaid
-graph TD
-    subgraph "Level 1: Foundations & Version Control"
-        T1["01. Git & GitHub"] --> T2["02. HTML5 Foundations"]
-        T2 --> T3["03. CSS3 Mastery"]
-        T3 --> T4["04. JavaScript Core & DOM"]
-    end
-
-    subgraph "Level 2: Backend & Database Engineering"
-        T4 --> T5["05. PHP 8 & MySQL (REST APIs)"]
-        T4 --> T6["06. Node.js & Express (REST APIs)"]
-    end
-
-    subgraph "Level 3: Modern Frontend & Enterprise"
-        T4 --> T7["07. React.js Modern Architecture"]
-        T7 --> T8["08. React with TypeScript (Enterprise)"]
-    end
+graph LR
+    T1["01. Git & GitHub"] --> T2["02. HTML5"]
+    T2 --> T3["03. CSS3 + Bootstrap + Tailwind"]
+    T3 --> T4["04. JavaScript ES6+"]
+    T4 --> T5["05. PHP & MySQL"]
+    T5 --> T6["06. Python Automation"]
+    T6 --> T7["07. React.js"]
+    T7 --> T8["08. React + TypeScript"]
+    T8 --> T9["09. Node.js + Express"]
+    T9 --> T10["10. AI + Prompt Engineering"]
+    T10 --> T11["11. Security + Vulnerabilities"]
 ```
 
 ### 📚 Course Repositories & Verification Engines
@@ -81,13 +75,15 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | **01. Git & GitHub** | [`course-git-github`](https://github.com/High-Q-Solid-Academy/course-git-github) | Terminal, commits, branches, merge conflicts, PRs | Conventional commit linting & PR compliance action |
 | **02. HTML Foundations** | [`course-html-foundations`](https://github.com/High-Q-Solid-Academy/course-html-foundations) | Semantic tags, accessible forms, tables, SEO meta | Headless DOM & W3C validation tests |
-| **03. CSS Mastery** | [`course-css-mastery`](https://github.com/High-Q-Solid-Academy/course-css-mastery) | Flexbox, CSS Grid, mobile-first queries, animations | Stylelint syntax & responsive layout assertion tests |
+| **03. CSS, Bootstrap & Tailwind** | [`course-css-mastery`](https://github.com/High-Q-Solid-Academy/course-css-mastery) | CSS, Flexbox, Grid, Bootstrap 5, Tailwind CSS | Responsive framework and layout assertions |
 | **04. JavaScript Core** | [`course-javascript-core`](https://github.com/High-Q-Solid-Academy/course-javascript-core) | ES6+, arrays/objects, DOM manipulation, Async/Fetch | Vitest test suite with instant score reports |
 | **05. PHP & MySQL** | [`course-php-backend`](https://github.com/High-Q-Solid-Academy/course-php-backend) | PHP 8, PDO, SQL CRUD, JSON APIs, session auth | PHP backend verification test runner |
-| **06. Node.js & Express** | [`course-nodejs-backend`](https://github.com/High-Q-Solid-Academy/course-nodejs-backend) | Express, middleware, REST APIs, JWT authentication | Node.js & Express autograding test runner |
-| **07. React.js Mastery** | [`course-reactjs-mastery`](https://github.com/High-Q-Solid-Academy/course-reactjs-mastery) | Vite, JSX, Hooks (`useState`, `useEffect`), SPAs | React component assertion test runner |
-| **08. React with TypeScript** | [`course-react-ts-enterprise`](https://github.com/High-Q-Solid-Academy/course-react-ts-enterprise) | Generics, interfaces, typed props, API contracts | TypeScript compiler type-check & test runner |
-
+| **06. Python Automation** | [`course-python-automation`](https://github.com/High-Q-Solid-Academy/course-python-automation) | Python syntax, collections, files, safe automation | Executable Python behavior tests |
+| **07. React.js Mastery** | [`course-reactjs-mastery`](https://github.com/High-Q-Solid-Academy/course-reactjs-mastery) | JSX, components, state, Hooks, SPAs | React component assertion runner |
+| **08. React with TypeScript** | [`course-react-ts-enterprise`](https://github.com/High-Q-Solid-Academy/course-react-ts-enterprise) | Interfaces, unions, typed props, API contracts | Type-contract verification runner |
+| **09. Node.js & Express** | [`course-nodejs-backend`](https://github.com/High-Q-Solid-Academy/course-nodejs-backend) | Express, middleware, REST APIs, authentication | Executable backend behavior tests |
+| **10. AI & Prompt Engineering** | [`course-ai-prompt-engineering`](https://github.com/High-Q-Solid-Academy/course-ai-prompt-engineering) | Prompt structure, evaluation, privacy, responsible AI | Evidence and rubric verification |
+| **11. Security & Vulnerabilities** | [`course-security-vulnerabilities`](https://github.com/High-Q-Solid-Academy/course-security-vulnerabilities) | Threat modeling, OWASP risks, auth, disclosure | Defensive-analysis rubric verification |
 
 ---
 
@@ -97,26 +93,27 @@ graph TD
 sequenceDiagram
     autonumber
     actor Student as Student
-    participant Template as High Q Template Repo
-    participant Personal as Student Personal Repo
+    participant Unlock as Progression Automation
+    participant Personal as Private Student Repo
     participant Actions as GitHub Actions Runner
     actor Tutor as High Q Tutors
 
-    Student->>Template: Clicks "Use this template"
-    Template->>Personal: Generates personal student repository
+    Unlock->>Personal: Releases Git course to new learner
     Student->>Personal: Clones locally & completes lab exercises
     Student->>Personal: Pushes solution (git push origin main)
     Personal->>Actions: Automatically triggers Verification Workflow
-    Actions-->>Student: Instant Pass/Fail test results & green badge
-    Student->>Tutor: Submits repository link for code review
-    Tutor-->>Student: Reviews implementation & awards High Q Certificate
+    Actions-->>Student: Numeric score and module feedback
+    Actions-->>Unlock: Publishes highq/autograding status
+    Unlock->>Unlock: Checks score is at least 70%
+    Unlock->>Personal: Creates and invites learner to next private course
 ```
 
-### 3 Simple Steps for Every Student:
-1. **Generate Your Copy**: Open any course repository above and click the green **"Use this template"** button to create your own copy under your personal GitHub profile.
-2. **Code & Push**: Clone your repository to your computer, work through the hands-on exercises in VS Code, and push your commits.
-3. **Instant Automated Feedback**: Every push automatically runs our High Q GitHub Actions suite to verify your HTML semantics, CSS rules, or JavaScript algorithms in real time!
+### The learner workflow
 
+1. **Accept the invitation:** The learner receives access only to the currently unlocked private course repository.
+2. **Learn, code and push:** Read the beginner notes, follow the guided video index, complete the exercises and push commits.
+3. **Use the feedback:** GitHub Actions returns a numeric grade and a module-by-module report after every push.
+4. **Advance after passing:** At 70% or higher, automation creates the next private course repository and sends a new collaborator invitation.
 
 ---
 

@@ -1,0 +1,33 @@
+name: Enroll learner in first course
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: Learner's exact GitHub username
+        required: true
+        type: string
+      real_name:
+        description: Learner's full real name (must match GitHub profile Name)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  enroll:
+    name: Create private Git foundations repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Enroll learner
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          STUDENT_USERNAME: ${{ inputs.username }}
+          REAL_NAME: ${{ inputs.real_name }}
+        run: node gradebook/enroll-student.mjs

@@ -1,0 +1,31 @@
+name: Unlock next course for passing learners
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Create repositories and invite learners (false performs a dry run)
+        required: true
+        default: false
+        type: boolean
+  schedule:
+    - cron: "30 18 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  unlock:
+    name: Evaluate prerequisite grades
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Provision newly unlocked courses
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          APPLY_UNLOCKS: ${{ github.event_name == 'schedule' || inputs.apply }}
+        run: node gradebook/unlock-next-course.mjs

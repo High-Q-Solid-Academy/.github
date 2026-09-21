@@ -43,7 +43,7 @@ export async function waitForTemplateReady(repository) {
     try {
       const details = await api(`/repos/${organization}/${repository}`);
       const branch = details.default_branch || 'main';
-      await api(`/repos/${organization}/${repository}/contents/README.md?ref=${encodeURIComponent(branch)}`);
+      await api(`/repos/${organization}/${repository}/git/ref/heads/${encodeURIComponent(branch)}`);
       return branch;
     } catch (error) {
       if (error.status !== 404) throw error;

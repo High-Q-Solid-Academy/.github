@@ -46,7 +46,7 @@ export async function waitForTemplateReady(repository) {
       await api(`/repos/${organization}/${repository}/git/ref/heads/${encodeURIComponent(branch)}`);
       return branch;
     } catch (error) {
-      if (error.status !== 404) throw error;
+      if (![404, 409].includes(error.status)) throw error;
       await delay(1500);
     }
   }

@@ -1,0 +1,30 @@
+name: Backfill missing enrollment records
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Write missing enrollment records (leave unchecked for a dry run)'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    name: Restore missing learner enrollment records
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Find and restore missing records
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          APPLY: ${{ inputs.apply }}
+        run: node gradebook/backfill-enrollments.mjs

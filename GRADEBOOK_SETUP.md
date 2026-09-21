@@ -39,6 +39,10 @@ Prefixes are configured in [`gradebook/courses.json`](gradebook/courses.json). C
 
 Each private learner repository contains `.highq/enrollment.json` on protected `main`. It binds the instructor-entered real name to GitHub's immutable numeric user ID. The gradebook resolves the current username from that ID, so a later username change does not lose the learner's records. It also warns when the learner changes or removes the real name on their public GitHub profile.
 
+## Repair missing enrollment records
+
+If a learner repository was created before its template files finished generating, the template's initial commit can replace the enrollment record. Run **Actions → Backfill missing enrollment records** in this repository. Start with **apply** unchecked to review the repositories that would be repaired, then run it again with **apply** checked to commit `.highq/enrollment.json` only where it is missing. Learners can then run `git pull` in their assigned repository.
+
 Generated repositories protect `main`: learners submit a pull request, the `Calculate course score` check must pass, one instructor approval is required, stale approvals are dismissed, and force-pushes/deletions are blocked. This prevents a learner from quietly replacing the tests or grading workflow on the graded branch. If the workflow summary reports branch protection as unavailable, check the organization's GitHub plan and repository rules before relying on the score.
 
 > **Private-repository plan requirement:** GitHub Free for organizations does not support protected branches on private repositories. The course-hiding system still works, but authoritative anti-tamper enforcement on private learner repositories requires GitHub Team, GitHub Enterprise Cloud or an eligible GitHub Education benefit. On GitHub Free, treat automated scores as provisional: review the learner's commits and grading-file diff before accepting a result, and do not approve changes to workflows, tests, scripts, package manifests or `.highq/enrollment.json`.

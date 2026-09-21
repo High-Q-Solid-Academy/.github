@@ -36,6 +36,35 @@ export async function listRepositories() {
   }
 }
 
+const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+export async function waitForTemplateReady(repository) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      const details = await api(`/repos/${organization}/${repository}`);
+      const branch = details.default_branch || 'main';
+      await api(`/repos/${organization}/${repository}/contents/README.md?ref=${encodeURIComponent(branch)}`);
+      return branch;
+    } catch (error) {
+      if (error.status !== 404) throw error;
+      await delay(1500);
+    }
+  }
+  throw new Error(`${repository} was created but its template files did not become available in time`);
+}
+
+export async function writeEnrollment(repository, enrollment, branch = 'main') {
+  const content = Buffer.from(`${JSON.stringify(enrollment, null, 2)}\n`).toString('base64');
+  await api(`/repos/${organization}/${repository}/contents/${enrollmentPath()}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      message: `Record enrollment identity for ${enrollment.realName}`,
+      content,
+      branch
+    })
+  });
+}
+
 export async function provisionCourse(course, student, apply, enrollment = null) {
   const repository = `${course.repositoryPrefix}${student}`;
   if (!apply) return { repository, action: 'would-create' };
@@ -51,29 +80,10 @@ export async function provisionCourse(course, student, apply, enrollment = null)
     })
   });
 
-  let ready = false;
-  for (let attempt = 0; attempt < 8; attempt += 1) {
-    try {
-      await api(`/repos/${organization}/${repository}`);
-      ready = true;
-      break;
-    } catch (error) {
-      if (error.status !== 404) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-    }
-  }
-  if (!ready) throw new Error(`${repository} was created but did not become available in time`);
+  const branch = await waitForTemplateReady(repository);
 
   if (enrollment) {
-    const content = Buffer.from(`${JSON.stringify(enrollment, null, 2)}\n`).toString('base64');
-    await api(`/repos/${organization}/${repository}/contents/${enrollmentPath()}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        message: `Record enrollment identity for ${enrollment.realName}`,
-        content,
-        branch: 'main'
-      })
-    });
+    await writeEnrollment(repository, enrollment, branch);
   }
 
   await api(`/repos/${organization}/${repository}/collaborators/${student}`, {

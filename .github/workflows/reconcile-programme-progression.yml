@@ -1,0 +1,28 @@
+name: One-time reconcile programme progression
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/reconcile-programme-progression.yml
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile:
+    name: Re-evaluate learners using recorded programme
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Apply programme-aware progression
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          APPLY_UNLOCKS: 'true'
+        run: node gradebook/unlock-next-course.mjs

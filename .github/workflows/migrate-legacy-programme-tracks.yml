@@ -1,0 +1,28 @@
+name: One-time migrate legacy programme tracks
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/migrate-legacy-programme-tracks.yml
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Assign pre-track learners to Computer Science
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Migrate legacy enrollment records
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          APPLY: 'true'
+        run: node gradebook/backfill-enrollments.mjs

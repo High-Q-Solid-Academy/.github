@@ -1,13 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { decodeEnrollment, enrollmentPath, normalizeName } from './identity.mjs';
+import { decodeEnrollment, DEFAULT_TRACK, enrollmentPath, enrollmentTrack, normalizeName } from './identity.mjs';
 
 const organization = process.env.GRADEBOOK_ORG || 'High-Q-Solid-Academy';
 const token = process.env.GRADEBOOK_TOKEN;
 const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';
 const root = path.resolve(import.meta.dirname, '..');
-const courses = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'courses.json'), 'utf8'));
+const curriculum = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'courses.json'), 'utf8'));
+const courses = curriculum.courses;
 
 if (!token) {
   console.error('GRADEBOOK_TOKEN is required. Add it as an Actions repository secret.');
@@ -59,6 +60,7 @@ async function resolveIdentity(repository, definition) {
       githubId: enrollment.githubId,
       student: currentUser.login,
       profileName: currentUser.name,
+      track: enrollmentTrack(enrollment),
       identityState: nameMatches ? 'verified' : 'profile-name-mismatch'
     };
   } catch (error) {
@@ -69,6 +71,7 @@ async function resolveIdentity(repository, definition) {
       githubId: user.id,
       student: user.login,
       profileName: user.name,
+      track: DEFAULT_TRACK,
       identityState: user.name ? 'legacy-unregistered' : 'missing-profile-name'
     };
   }
@@ -78,11 +81,13 @@ const repositories = await listRepositories();
 const rows = [];
 
 for (const repository of repositories) {
-  const definition = courses.find((course) => repository.name.startsWith(course.repositoryPrefix));
+  const definition = courses.find((course) => repository.name.startsWith(course.repositoryPrefix) && repository.name.length > course.repositoryPrefix.length);
   if (!definition) continue;
 
   try {
     const identity = await resolveIdentity(repository, definition);
+    const trackDefinition = curriculum.tracks[identity.track];
+    const orderIndex = trackDefinition?.courses?.indexOf(definition.id) ?? -1;
     const status = await api(`/repos/${organization}/${repository.name}/commits/${repository.default_branch}/status`);
     const gradeStatus = status.statuses.find((item) => item.context === 'highq/autograding');
     const humanStatus = status.statuses.find((item) => item.context === 'highq/human-capstone');
@@ -96,9 +101,10 @@ for (const repository of repositories) {
       ? (Number.isFinite(score) && Number.isFinite(humanScore) ? Math.round((score + humanScore) / 2) : null)
       : score;
     rows.push({
-      order: definition.order,
+      order: orderIndex >= 0 ? orderIndex + 1 : 999,
       course: definition.course,
       passScore: definition.passScore,
+      programme: trackDefinition?.name || identity.track,
       ...identity,
       repository: repository.name,
       score,
@@ -116,9 +122,11 @@ for (const repository of repositories) {
     });
   } catch (error) {
     rows.push({
-      order: definition.order,
+      order: 999,
       course: definition.course,
       passScore: definition.passScore,
+      programme: 'Unknown',
+      track: 'unknown',
       realName: 'Identity unavailable',
       student: repository.name.slice(definition.repositoryPrefix.length) || 'unknown',
       githubId: null,
@@ -141,28 +149,19 @@ for (const repository of repositories) {
   }
 }
 
-rows.sort((a, b) => a.realName.localeCompare(b.realName) || a.order - b.order);
+rows.sort((a, b) => a.realName.localeCompare(b.realName) || a.track.localeCompare(b.track) || a.order - b.order);
 fs.writeFileSync(path.join(root, 'gradebook.json'), `${JSON.stringify({ organization, generatedAt: new Date().toISOString(), rows }, null, 2)}\n`);
 
-const headers = ['Real Name', 'GitHub Username', 'GitHub ID', 'Identity', 'Course', 'Repository', 'Automated Score', 'Human Score', 'Final Score', 'Pass Mark', 'Passed', 'Automated State', 'Human State', 'Updated At', 'Repository URL', 'Details URL'];
-const csvRows = rows.map((row) => [row.realName, row.student, row.githubId ?? '', row.identityState, row.course, row.repository, row.score ?? '', row.humanScore ?? '', row.finalScore ?? '', row.passScore, row.passed ? 'Yes' : 'No', row.state, row.humanState, row.updatedAt, row.url, row.detailsUrl]);
+const headers = ['Real Name', 'GitHub Username', 'GitHub ID', 'Programme', 'Identity', 'Course', 'Repository', 'Automated Score', 'Human Score', 'Final Score', 'Pass Mark', 'Passed', 'Automated State', 'Human State', 'Updated At', 'Repository URL', 'Details URL'];
+const csvRows = rows.map((row) => [row.realName, row.student, row.githubId ?? '', row.programme, row.identityState, row.course, row.repository, row.score ?? '', row.humanScore ?? '', row.finalScore ?? '', row.passScore, row.passed ? 'Yes' : 'No', row.state, row.humanState, row.updatedAt, row.url, row.detailsUrl]);
 fs.writeFileSync(path.join(root, 'gradebook.csv'), `${[headers, ...csvRows].map((row) => row.map(csvCell).join(',')).join('\n')}\n`);
 
 const scored = rows.filter((row) => Number.isFinite(row.finalScore));
 const average = scored.length ? Math.round(scored.reduce((sum, row) => sum + row.finalScore, 0) / scored.length) : 0;
 const tableRows = rows.slice(0, 100).map((row) =>
-  `| ${row.realName} | [@${row.student}](${row.url}) | ${row.course} | ${row.score ?? '—'} | ${row.humanReviewRequired ? (row.humanScore ?? 'pending') : 'not required'} | ${row.finalScore ?? '—'} | ${row.passed ? 'Passed' : 'In progress'} | ${row.identityState} | [Details](${row.detailsUrl}) |`
+  `| ${row.realName} | [@${row.student}](${row.url}) | ${row.programme} | ${row.course} | ${row.score ?? '—'} | ${row.humanReviewRequired ? (row.humanScore ?? 'pending') : 'not required'} | ${row.finalScore ?? '—'} | ${row.passed ? 'Passed' : 'In progress'} | ${row.identityState} | [Details](${row.detailsUrl}) |`
 ).join('\n');
-const summary = `# High Q instructor gradebook
-
-**${new Set(rows.map((row) => row.githubId || row.student)).size} learners** · **${rows.length} course repositories** · **${scored.length} graded** · **${average}% average**
-
-| Real name | GitHub | Course | Auto | Human | Final | Result | Identity | Run |
-| --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |
-${tableRows || '| — | — | No matching learner repositories found | — | — | — | — | — | — |'}
-
-Download the print-ready HTML, CSV, or JSON from this run's **Artifacts** section. Identity warnings require instructor review.
-`;
+const summary = `# High Q instructor gradebook\n\n**${new Set(rows.map((row) => row.githubId || row.student)).size} learners** · **${rows.length} course repositories** · **${scored.length} graded** · **${average}% average**\n\n| Real name | GitHub | Programme | Course | Auto | Human | Final | Result | Identity | Run |\n| --- | --- | --- | --- | ---: | ---: | ---: | --- | --- | --- |\n${tableRows || '| — | — | — | No matching learner repositories found | — | — | — | — | — | — |'}\n\nDownload the print-ready HTML, CSV, or JSON from this run's **Artifacts** section. Identity warnings require instructor review.\n`;
 
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 console.log(summary);

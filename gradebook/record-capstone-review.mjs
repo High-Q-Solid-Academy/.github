@@ -24,8 +24,8 @@ for (const [name, score] of criteria) {
   if (!Number.isInteger(score) || score < 0 || score > 20) throw new Error(`${name} must be a whole number from 0 to 20.`);
 }
 
-const courses = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'courses.json'), 'utf8'));
-const course = courses.find((item) => item.id === courseId && item.humanReviewRequired);
+const curriculum = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'courses.json'), 'utf8'));
+const course = curriculum.courses.find((item) => item.id === courseId && item.humanReviewRequired);
 if (!course) throw new Error('COURSE_ID must identify a configured human-review milestone.');
 
 const user = await api(`/users/${username}`);
@@ -58,21 +58,7 @@ const passScore = course.humanPassScore || 70;
 const passed = score >= passScore;
 const commit = await api(`/repos/${organization}/${learnerRepository.name}/commits/${learnerRepository.default_branch}`);
 const rubricRows = criteria.map(([name, value]) => `| ${name} | ${value}/20 |`).join('\n');
-const comment = `## Human capstone review
-
-| Criterion | Score |
-| --- | ---: |
-${rubricRows}
-| **Total** | **${score}/100** |
-
-**Result:** ${passed ? 'PASS' : 'REVISION REQUIRED'}  
-**Reviewer:** @${reviewer}
-
-### Feedback
-
-${feedback.slice(0, 6000)}
-
-${passed ? 'The human-review gate is complete. The progression workflow may now unlock the next course after confirming the automated course score.' : 'Improve the project, redeploy it and submit a new review request when the listed problems are corrected.'}`;
+const comment = `## Human capstone review\n\n| Criterion | Score |\n| --- | ---: |\n${rubricRows}\n| **Total** | **${score}/100** |\n\n**Result:** ${passed ? 'PASS' : 'REVISION REQUIRED'}  \n**Reviewer:** @${reviewer}\n\n### Feedback\n\n${feedback.slice(0, 6000)}\n\n${passed ? 'The human-review gate is complete. The progression workflow may now unlock the next course after confirming the automated course score.' : 'Improve the project, redeploy it and submit a new review request when the listed problems are corrected.'}`;
 
 await api(`/repos/${organization}/${learnerRepository.name}/issues/${issue.number}/comments`, {
   method: 'POST',
@@ -94,14 +80,6 @@ if (passed) {
   });
 }
 
-const summary = `# Human capstone review recorded
-
-**${course.course}** · **@${user.login}** · **${score}/100** · **${passed ? 'PASS' : 'REVISION REQUIRED'}**
-
-- Learner repository: ${learnerRepository.html_url}
-- Submission and feedback: ${issue.html_url}
-- Reviewer: @${reviewer}
-`;
+const summary = `# Human capstone review recorded\n\n**${course.course}** · **@${user.login}** · **${score}/100** · **${passed ? 'PASS' : 'REVISION REQUIRED'}**\n\n- Learner repository: ${learnerRepository.html_url}\n- Submission and feedback: ${issue.html_url}\n- Reviewer: @${reviewer}\n`;
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 console.log(summary);
-

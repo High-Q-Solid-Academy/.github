@@ -1,10 +1,10 @@
-name: Backfill missing enrollment records
+name: Backfill and migrate enrollment records
 
 on:
   workflow_dispatch:
     inputs:
       apply:
-        description: 'Write missing enrollment records (leave unchecked for a dry run)'
+        description: 'Write missing records and assign legacy learners to Computer Science (leave unchecked for dry run)'
         required: true
         default: false
         type: boolean
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   backfill:
-    name: Restore missing learner enrollment records
+    name: Restore enrollment records and protect legacy programme assignment
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-      - name: Find and restore missing records
+      - name: Backfill and migrate legacy learners
         env:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
           CURRICULUM_ORG: High-Q-Solid-Academy

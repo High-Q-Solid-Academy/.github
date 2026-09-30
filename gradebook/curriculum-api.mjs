@@ -55,12 +55,21 @@ export async function waitForTemplateReady(repository) {
 
 export async function writeEnrollment(repository, enrollment, branch = 'main') {
   const content = Buffer.from(`${JSON.stringify(enrollment, null, 2)}\n`).toString('base64');
+  let sha = null;
+  try {
+    const existing = await api(`/repos/${organization}/${repository}/contents/${enrollmentPath()}?ref=${encodeURIComponent(branch)}`);
+    sha = existing.sha;
+  } catch (error) {
+    if (error.status !== 404) throw error;
+  }
+
   await api(`/repos/${organization}/${repository}/contents/${enrollmentPath()}`, {
     method: 'PUT',
     body: JSON.stringify({
-      message: `Record enrollment identity for ${enrollment.realName}`,
+      message: `${sha ? 'Update' : 'Record'} enrollment identity for ${enrollment.realName}`,
       content,
-      branch
+      branch,
+      ...(sha ? { sha } : {})
     })
   });
 }

@@ -1,3 +1,6 @@
+export const DEFAULT_TRACK = 'computer-science';
+export const VALID_TRACKS = new Set(['computer-science', 'computer-engineering']);
+
 export function normalizeName(value) {
   return String(value || '')
     .normalize('NFKD')
@@ -6,6 +9,25 @@ export function normalizeName(value) {
     .trim()
     .replace(/\s+/g, ' ')
     .toLowerCase();
+}
+
+export function normalizeTrack(value, fallback = DEFAULT_TRACK) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return fallback;
+  const aliases = new Map([
+    ['cs', 'computer-science'],
+    ['cse', 'computer-science'],
+    ['computer science', 'computer-science'],
+    ['computer-science', 'computer-science'],
+    ['ce', 'computer-engineering'],
+    ['computer engineering', 'computer-engineering'],
+    ['computer-engineering', 'computer-engineering']
+  ]);
+  const normalized = aliases.get(raw);
+  if (!normalized || !VALID_TRACKS.has(normalized)) {
+    throw new Error(`Unknown programme track: ${value}. Expected computer-science or computer-engineering.`);
+  }
+  return normalized;
 }
 
 export function assertRealNameMatches(expectedName, profileName) {
@@ -30,13 +52,18 @@ export function decodeEnrollment(content) {
   return JSON.parse(Buffer.from(content, 'base64').toString('utf8'));
 }
 
-export function buildEnrollment(user, realName, enrolledAt = new Date().toISOString()) {
+export function enrollmentTrack(enrollment) {
+  return normalizeTrack(enrollment?.track, DEFAULT_TRACK);
+}
+
+export function buildEnrollment(user, realName, track = DEFAULT_TRACK, enrolledAt = new Date().toISOString()) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     realName: String(realName).trim(),
     githubId: user.id,
     githubLoginAtEnrollment: user.login,
     githubProfileUrl: user.html_url,
+    track: normalizeTrack(track),
     enrolledAt
   };
 }

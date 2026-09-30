@@ -1,4 +1,4 @@
-name: Enroll learner in first course
+name: Enroll learner in programme
 
 on:
   workflow_dispatch:
@@ -11,13 +11,21 @@ on:
         description: Learner's full real name (must match GitHub profile Name)
         required: true
         type: string
+      programme:
+        description: Programme / curriculum track
+        required: true
+        default: computer-science
+        type: choice
+        options:
+          - computer-science
+          - computer-engineering
 
 permissions:
   contents: read
 
 jobs:
   enroll:
-    name: Create private Git foundations repository
+    name: Create shared Git foundations repository and record programme
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -31,4 +39,5 @@ jobs:
           CURRICULUM_ORG: High-Q-Solid-Academy
           STUDENT_USERNAME: ${{ inputs.username }}
           REAL_NAME: ${{ inputs.real_name }}
+          STUDENT_TRACK: ${{ inputs.programme }}
         run: node gradebook/enroll-student.mjs

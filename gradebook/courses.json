@@ -1,109 +1,149 @@
-[
-  {
-    "order": 1,
-    "id": "git",
-    "course": "Git & GitHub Foundations",
-    "template": "course-git-github",
-    "repositoryPrefix": "course-git-github-",
-    "prerequisite": null,
-    "passScore": 70
+{
+  "schemaVersion": 2,
+  "defaultTrack": "computer-science",
+  "tracks": {
+    "computer-science": {
+      "name": "Computer Science",
+      "courses": [
+        "git",
+        "html",
+        "css",
+        "javascript",
+        "php",
+        "python",
+        "react",
+        "react-typescript",
+        "node",
+        "ai",
+        "security"
+      ]
+    },
+    "computer-engineering": {
+      "name": "Computer Engineering",
+      "courses": [
+        "git",
+        "computer-engineering-foundations",
+        "embedded-systems",
+        "python",
+        "computer-architecture-hdl",
+        "cpp-rtos-robotics",
+        "security"
+      ]
+    }
   },
-  {
-    "order": 2,
-    "id": "html",
-    "course": "HTML5 Foundations",
-    "template": "course-html-foundations",
-    "repositoryPrefix": "course-html-foundations-",
-    "prerequisite": "git",
-    "passScore": 70
-  },
-  {
-    "order": 3,
-    "id": "css",
-    "course": "CSS3, Bootstrap 5 & Tailwind CSS",
-    "template": "course-css-mastery",
-    "repositoryPrefix": "course-css-mastery-",
-    "prerequisite": "html",
-    "passScore": 70
-  },
-  {
-    "order": 4,
-    "id": "javascript",
-    "course": "JavaScript (ES6+)",
-    "template": "course-javascript-core",
-    "repositoryPrefix": "course-javascript-core-",
-    "prerequisite": "css",
-    "passScore": 70
-  },
-  {
-    "order": 5,
-    "id": "php",
-    "course": "PHP & MySQL",
-    "template": "course-php-backend",
-    "repositoryPrefix": "course-php-backend-",
-    "prerequisite": "javascript",
-    "passScore": 70,
-    "humanReviewRequired": true,
-    "humanPassScore": 70
-  },
-  {
-    "order": 6,
-    "id": "python",
-    "course": "Python Automation & Scripting",
-    "template": "course-python-automation",
-    "repositoryPrefix": "course-python-automation-",
-    "prerequisite": "php",
-    "passScore": 70,
-    "humanReviewRequired": true,
-    "humanPassScore": 70
-  },
-  {
-    "order": 7,
-    "id": "react",
-    "course": "React.js",
-    "template": "course-reactjs-mastery",
-    "repositoryPrefix": "course-reactjs-mastery-",
-    "prerequisite": "python",
-    "passScore": 70
-  },
-  {
-    "order": 8,
-    "id": "react-typescript",
-    "course": "React with TypeScript",
-    "template": "course-react-ts-enterprise",
-    "repositoryPrefix": "course-react-ts-enterprise-",
-    "prerequisite": "react",
-    "passScore": 70,
-    "humanReviewRequired": true,
-    "humanPassScore": 70
-  },
-  {
-    "order": 9,
-    "id": "node",
-    "course": "Node.js & Express REST APIs",
-    "template": "course-nodejs-backend",
-    "repositoryPrefix": "course-nodejs-backend-",
-    "prerequisite": "react-typescript",
-    "passScore": 70,
-    "humanReviewRequired": true,
-    "humanPassScore": 70
-  },
-  {
-    "order": 10,
-    "id": "ai",
-    "course": "AI & Prompt Engineering",
-    "template": "course-ai-prompt-engineering",
-    "repositoryPrefix": "course-ai-prompt-engineering-",
-    "prerequisite": "node",
-    "passScore": 70
-  },
-  {
-    "order": 11,
-    "id": "security",
-    "course": "Understanding Security & Vulnerabilities",
-    "template": "course-security-vulnerabilities",
-    "repositoryPrefix": "course-security-vulnerabilities-",
-    "prerequisite": "ai",
-    "passScore": 70
-  }
-]
+  "courses": [
+    {
+      "id": "git",
+      "course": "Git & GitHub Foundations",
+      "template": "course-git-github",
+      "repositoryPrefix": "course-git-github-",
+      "passScore": 70
+    },
+    {
+      "id": "html",
+      "course": "HTML5 Foundations",
+      "template": "course-html-foundations",
+      "repositoryPrefix": "course-html-foundations-",
+      "passScore": 70
+    },
+    {
+      "id": "css",
+      "course": "CSS3, Bootstrap 5 & Tailwind CSS",
+      "template": "course-css-mastery",
+      "repositoryPrefix": "course-css-mastery-",
+      "passScore": 70
+    },
+    {
+      "id": "javascript",
+      "course": "JavaScript (ES6+)",
+      "template": "course-javascript-core",
+      "repositoryPrefix": "course-javascript-core-",
+      "passScore": 70
+    },
+    {
+      "id": "php",
+      "course": "PHP & MySQL",
+      "template": "course-php-backend",
+      "repositoryPrefix": "course-php-backend-",
+      "passScore": 70,
+      "humanReviewRequired": true,
+      "humanPassScore": 70
+    },
+    {
+      "id": "python",
+      "course": "Python Automation & Engineering Tools",
+      "template": "course-python-automation",
+      "repositoryPrefix": "course-python-automation-",
+      "passScore": 70,
+      "humanReviewRequired": true,
+      "humanPassScore": 70
+    },
+    {
+      "id": "react",
+      "course": "React.js",
+      "template": "course-reactjs-mastery",
+      "repositoryPrefix": "course-reactjs-mastery-",
+      "passScore": 70
+    },
+    {
+      "id": "react-typescript",
+      "course": "React with TypeScript",
+      "template": "course-react-ts-enterprise",
+      "repositoryPrefix": "course-react-ts-enterprise-",
+      "passScore": 70,
+      "humanReviewRequired": true,
+      "humanPassScore": 70
+    },
+    {
+      "id": "node",
+      "course": "Node.js & Express REST APIs",
+      "template": "course-nodejs-backend",
+      "repositoryPrefix": "course-nodejs-backend-",
+      "passScore": 70,
+      "humanReviewRequired": true,
+      "humanPassScore": 70
+    },
+    {
+      "id": "ai",
+      "course": "AI & Prompt Engineering",
+      "template": "course-ai-prompt-engineering",
+      "repositoryPrefix": "course-ai-prompt-engineering-",
+      "passScore": 70
+    },
+    {
+      "id": "security",
+      "course": "Understanding Security & Vulnerabilities",
+      "template": "course-security-vulnerabilities",
+      "repositoryPrefix": "course-security-vulnerabilities-",
+      "passScore": 70
+    },
+    {
+      "id": "computer-engineering-foundations",
+      "course": "Computer Engineering Foundations",
+      "template": "course-computer-engineering-foundations",
+      "repositoryPrefix": "course-computer-engineering-foundations-",
+      "passScore": 70
+    },
+    {
+      "id": "embedded-systems",
+      "course": "Embedded Systems & Microcontrollers",
+      "template": "course-embedded-systems",
+      "repositoryPrefix": "course-embedded-systems-",
+      "passScore": 70
+    },
+    {
+      "id": "computer-architecture-hdl",
+      "course": "Computer Architecture, Assembly & HDL",
+      "template": "course-computer-architecture-hdl",
+      "repositoryPrefix": "course-computer-architecture-hdl-",
+      "passScore": 70
+    },
+    {
+      "id": "cpp-rtos-robotics",
+      "course": "C++ Systems, RTOS & Robotics",
+      "template": "course-cpp-rtos-robotics",
+      "repositoryPrefix": "course-cpp-rtos-robotics-",
+      "passScore": 70
+    }
+  ]
+}

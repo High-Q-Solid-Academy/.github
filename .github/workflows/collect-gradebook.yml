@@ -26,6 +26,11 @@ jobs:
         env:
           GRADEBOOK_TOKEN: ${{ secrets.GRADEBOOK_TOKEN }}
           GRADEBOOK_ORG: High-Q-Solid-Academy
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
+          HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
+          HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
         run: node gradebook/collect.mjs
 
       - name: Create styled printable report

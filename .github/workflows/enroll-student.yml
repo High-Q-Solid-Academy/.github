@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       username:
-        description: Learner's exact GitHub username
+        description: Learner's exact GitHub username (High Q GitHub App must already be installed on this account)
         required: true
         type: string
       real_name:
@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   enroll:
-    name: Create shared Git foundations repository and record programme
+    name: Provision learner-owned High Q course repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -41,6 +41,9 @@ jobs:
         env:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
           CURRICULUM_ORG: High-Q-Solid-Academy
+          HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
+          HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
+          HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
           STUDENT_USERNAME: ${{ inputs.username }}
           REAL_NAME: ${{ inputs.real_name }}
           STUDENT_EMAIL: ${{ inputs.email }}

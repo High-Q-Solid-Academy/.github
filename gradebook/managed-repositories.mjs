@@ -44,13 +44,23 @@ export async function listManagedRepositories({ includeInactive = false } = {}) 
           {},
           authToken,
         );
+        const repositoryRecord = {
+          ...record,
+          currentCourseId: descriptor.courseId || record.currentCourseId,
+          currentCourseName: descriptor.courseName || record.currentCourseName,
+          repositoryOwner: descriptor.repositoryOwner,
+          repositoryName: descriptor.repositoryName,
+          repositoryFullName:
+            descriptor.repositoryFullName || `${descriptor.repositoryOwner}/${descriptor.repositoryName}`,
+          defaultBranch: descriptor.defaultBranch || repository.default_branch,
+        };
         learnerOwned.push({
           ...repository,
           _highq: {
             ownership: 'learner',
             owner: descriptor.repositoryOwner,
             installationId: record.installationId,
-            registry: record,
+            registry: repositoryRecord,
             courseId: descriptor.courseId || null,
             repositoryState: descriptor.state || 'historical',
           },

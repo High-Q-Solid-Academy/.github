@@ -1,0 +1,32 @@
+name: Validate curriculum automation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - gradebook/**/*.mjs
+      - .github/workflows/validate-curriculum-automation.yml
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    name: Check Node automation syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Validate gradebook scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check "$file"
+          done < <(find gradebook -type f -name '*.mjs' -print0)

@@ -65,21 +65,31 @@ export function enrollmentTrack(enrollment) {
   return normalizeTrack(enrollment?.track, DEFAULT_TRACK);
 }
 
+export function enrollmentOwnership(enrollment) {
+  return enrollment?.ownership === 'learner' ? 'learner' : 'organization';
+}
+
 export function buildEnrollment(
   user,
   realName,
   track = DEFAULT_TRACK,
   enrolledAt = new Date().toISOString(),
   email = null,
+  metadata = {},
 ) {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     realName: String(realName).trim(),
     email: normalizeEmail(email),
     githubId: user.id,
     githubLoginAtEnrollment: user.login,
     githubProfileUrl: user.html_url,
     track: normalizeTrack(track),
+    ownership: metadata.ownership === 'learner' ? 'learner' : 'organization',
+    ...(metadata.installationId ? { installationId: Number(metadata.installationId) } : {}),
+    ...(metadata.repositoryOwner ? { repositoryOwner: metadata.repositoryOwner } : {}),
+    ...(metadata.repositoryName ? { repositoryName: metadata.repositoryName } : {}),
+    ...(metadata.repositoryFullName ? { repositoryFullName: metadata.repositoryFullName } : {}),
     enrolledAt
   };
 }

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       apply:
-        description: Create repositories and invite learners (false performs a dry run)
+        description: Create newly unlocked course repositories (false performs a dry run)
         required: true
         default: false
         type: boolean
@@ -28,5 +28,8 @@ jobs:
         env:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
           CURRICULUM_ORG: High-Q-Solid-Academy
+          HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
+          HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
+          HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
           APPLY_UNLOCKS: ${{ github.event_name == 'schedule' || inputs.apply }}
         run: node gradebook/unlock-next-course.mjs

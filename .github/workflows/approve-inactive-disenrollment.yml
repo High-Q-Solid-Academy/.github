@@ -3,12 +3,8 @@ name: Approve inactive learner disenrollment
 on:
   workflow_dispatch:
     inputs:
-      usernames:
-        description: GitHub usernames to remove (separate with commas or spaces)
-        required: true
-        type: string
       confirmation:
-        description: Type DISENROLL SELECTED to confirm only the listed learners
+        description: Type DISENROLL SELECTED to confirm the checked learners
         required: true
         type: string
 
@@ -17,7 +13,7 @@ permissions:
 
 jobs:
   approve:
-    name: Delete selected approved unfinished courses only
+    name: Delete checked approved unfinished courses only
     runs-on: ubuntu-latest
     environment: learner-disenrollment
     steps:
@@ -26,10 +22,27 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
-      - name: Preserve resume state and delete selected reviewed repositories
+
+      - name: Read checked learners from private review dashboard
+        id: selection
         env:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
           CURRICULUM_ORG: High-Q-Solid-Academy
-          STUDENT_USERNAMES: ${{ inputs.usernames }}
+        run: node gradebook/review-selection.mjs
+
+      - name: Preserve resume state and delete checked reviewed repositories
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          STUDENT_USERNAMES: ${{ steps.selection.outputs.usernames }}
           DISENROLL_CONFIRMATION: ${{ inputs.confirmation }}
         run: node gradebook/approve-disenrollment.mjs
+
+      - name: Clear completed selections from private review dashboard
+        if: success()
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          STUDENT_USERNAMES: ${{ steps.selection.outputs.usernames }}
+          CLEAR_SELECTIONS: "1"
+        run: node gradebook/review-selection.mjs

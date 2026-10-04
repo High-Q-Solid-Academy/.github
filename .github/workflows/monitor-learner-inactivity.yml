@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/monitor-learner-inactivity.yml
       - gradebook/monitor-inactivity.mjs
+      - gradebook/send-inactivity-email.py
       - gradebook/inactivity-lib.mjs
       - gradebook/courses.json
   schedule:
@@ -35,3 +36,13 @@ jobs:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
           CURRICULUM_ORG: High-Q-Solid-Academy
         run: node gradebook/monitor-inactivity.mjs
+      - name: Email newly warned or reviewed learners
+        env:
+          REPORT_SMTP_HOST: ${{ secrets.REPORT_SMTP_HOST }}
+          REPORT_SMTP_PORT: ${{ secrets.REPORT_SMTP_PORT }}
+          REPORT_SMTP_SECURITY: ${{ secrets.REPORT_SMTP_SECURITY }}
+          REPORT_SMTP_USERNAME: ${{ secrets.REPORT_SMTP_USERNAME }}
+          REPORT_SMTP_PASSWORD: ${{ secrets.REPORT_SMTP_PASSWORD }}
+          REPORT_EMAIL_FROM: ${{ secrets.REPORT_EMAIL_FROM }}
+          REPORT_EMAIL_FROM_NAME: High Q Solid Academy
+        run: python3 gradebook/send-inactivity-email.py

@@ -1,3 +1,4 @@
+import process from 'node:process';
 import { api, organization } from './curriculum-api.mjs';
 
 export const LEARNER_REGISTRY_REPOSITORY =

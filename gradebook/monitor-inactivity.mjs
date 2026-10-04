@@ -1,6 +1,12 @@
-import fs from "node:fs";
-import process from "node:process";
-import { api, organization, token } from "./curriculum-api.mjs";
+import fs from 'node:fs';
+import process from 'node:process';
+import {
+  api,
+  organization,
+  repoApi,
+  repositoryFullName,
+  token,
+} from './curriculum-api.mjs';
 import {
   closeInactivityIssue,
   createWarningIssue,
@@ -14,45 +20,51 @@ import {
   REVIEW_DAYS,
   STATE_REPOSITORY,
   WARNING_DAYS,
-} from "./inactivity-lib.mjs";
+} from './inactivity-lib.mjs';
 
-const REVIEW_DASHBOARD_MARKER = "<!-- highq-inactivity-review-dashboard -->";
-const REVIEW_DASHBOARD_TITLE = "Inactive learner review — select for disenrollment";
+const REVIEW_DASHBOARD_MARKER = '<!-- highq-inactivity-review-dashboard -->';
+const REVIEW_DASHBOARD_TITLE = 'Inactive learner review — select for disenrollment';
 
 if (!token) {
-  console.error("CURRICULUM_ADMIN_TOKEN is required.");
+  console.error('CURRICULUM_ADMIN_TOKEN is required.');
   process.exit(1);
 }
 
 function issueDetails(entry, lastActivity, inactiveDays, state) {
-  if (state === "warning") {
+  const learnerOwned = entry.repository?._highq?.ownership === 'learner';
+  if (state === 'warning') {
     return {
-      title: "INACTIVE — 1-DAY ACTIVITY WARNING",
-      body: `${INACTIVITY_MARKER}\n\n@${entry.user.login}, your current High Q course has been inactive for **${inactiveDays} full days**.\n\nYou have **1 day** to resume learner activity by pushing a course commit, updating/opening a pull request, or participating in a course issue.\n\nIf there is still no learner activity after the grace period, the course will move to manual instructor review. Nothing is deleted automatically.\n\nLast learner activity: ${lastActivity.toISOString()}`,
+      title: 'INACTIVE — 1-DAY ACTIVITY WARNING',
+      body: `${INACTIVITY_MARKER}\n\n@${entry.user.login}, your current High Q course has been inactive for **${inactiveDays} full days**.\n\nYou have **1 day** to resume learner activity by pushing a course commit, updating/opening a pull request, or participating in a course issue.\n\nIf there is still no learner activity after the grace period, the course will move to manual instructor review. Nothing changes automatically.\n\nLast learner activity: ${lastActivity.toISOString()}`,
     };
   }
 
+  const ownershipNote = learnerOwned
+    ? 'Your personal repository remains in your GitHub account. High Q can only pause/disenroll the course from the academy programme.'
+    : 'No repository has been deleted.';
   return {
-    title: "INACTIVE — DISENROLLMENT REVIEW",
-    body: `${INACTIVITY_MARKER}\n\n@${entry.user.login}, your 1-day grace period has ended and this unfinished course is now **pending instructor review**.\n\nNo repository has been deleted. You can still resume learner activity before an instructor approves disenrollment.\n\nInactive for: **${inactiveDays} full days**  \nLast learner activity: ${lastActivity.toISOString()}`,
+    title: 'INACTIVE — DISENROLLMENT REVIEW',
+    body: `${INACTIVITY_MARKER}\n\n@${entry.user.login}, your 1-day grace period has ended and this unfinished course is now **pending instructor review**.\n\n${ownershipNote} You can still resume learner activity before an instructor approves disenrollment.\n\nInactive for: **${inactiveDays} full days**  \nLast learner activity: ${lastActivity.toISOString()}`,
   };
 }
 
 async function refreshIssue(entry, issue, lastActivity, inactiveDays, state) {
   const details = issueDetails(entry, lastActivity, inactiveDays, state);
-  const updated = await api(
-    `/repos/${organization}/${entry.repository.name}/issues/${issue.number}`,
+  const updated = await repoApi(
+    entry.repository,
+    `/issues/${issue.number}`,
     {
-      method: "PATCH",
+      method: 'PATCH',
       body: JSON.stringify(details),
     },
   );
 
   try {
-    await api(
-      `/repos/${organization}/${entry.repository.name}/issues/${issue.number}/assignees`,
+    await repoApi(
+      entry.repository,
+      `/issues/${issue.number}/assignees`,
       {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({ assignees: [entry.user.login] }),
       },
     );
@@ -66,7 +78,7 @@ async function refreshIssue(entry, issue, lastActivity, inactiveDays, state) {
 }
 
 function queueEmail(queue, entry, state, inactiveDays, lastActivity, issueUrl) {
-  const email = String(entry.enrollment?.email || "").trim();
+  const email = String(entry.enrollment?.email || '').trim();
   if (!email) {
     console.warn(
       `No stored learner email for @${entry.user.login}; GitHub issue notification will be used only.`,
@@ -79,7 +91,8 @@ function queueEmail(queue, entry, state, inactiveDays, lastActivity, issueUrl) {
     learner: entry.user.login,
     realName: entry.enrollment?.realName || entry.user.login,
     course: entry.course.course,
-    repository: entry.repository.name,
+    repository: repositoryFullName(entry.repository),
+    ownership: entry.repository?._highq?.ownership || 'organization',
     inactiveDays,
     lastActivity: lastActivity.toISOString(),
     issueUrl: issueUrl || null,
@@ -88,7 +101,7 @@ function queueEmail(queue, entry, state, inactiveDays, lastActivity, issueUrl) {
 
 function checkedLearnersFromBody(body) {
   const checked = new Set();
-  for (const match of String(body || "").matchAll(
+  for (const match of String(body || '').matchAll(
     /^- \[[xX]\] @([a-z\d](?:[a-z\d-]{0,37}[a-z\d])?)/gim,
   )) {
     checked.add(match[1].toLowerCase());
@@ -97,12 +110,12 @@ function checkedLearnersFromBody(body) {
 }
 
 async function syncReviewDashboard(results) {
-  const reviewRows = results.filter((row) => row.state === "review");
+  const reviewRows = results.filter((row) => row.state === 'review');
   if (!reviewRows.length) return null;
 
   await ensureStateRepository();
   await api(`/repos/${organization}/${STATE_REPOSITORY}`, {
-    method: "PATCH",
+    method: 'PATCH',
     body: JSON.stringify({ has_issues: true }),
   });
 
@@ -119,25 +132,26 @@ async function syncReviewDashboard(results) {
   const tasks = reviewRows
     .sort((a, b) => b.inactiveDays - a.inactiveDays)
     .map((row) => {
-      const selected = checked.has(row.learner.toLowerCase()) ? "x" : " ";
-      const details = row.issueUrl ? ` — [review issue](${row.issueUrl})` : "";
-      return `- [${selected}] @${row.learner} — ${row.course} — ${row.inactiveDays} inactive days${details}`;
+      const selected = checked.has(row.learner.toLowerCase()) ? 'x' : ' ';
+      const details = row.issueUrl ? ` — [review issue](${row.issueUrl})` : '';
+      const ownership = row.ownership === 'learner' ? ' — learner-owned repo' : '';
+      return `- [${selected}] @${row.learner} — ${row.course} — ${row.inactiveDays} inactive days${ownership}${details}`;
     })
-    .join("\n");
+    .join('\n');
 
-  const body = `${REVIEW_DASHBOARD_MARKER}\n\nTick only the learners you want to disenroll. Checking a box does **not** delete anything by itself.\n\n${tasks}\n\nAfter selecting, run **Actions → Approve inactive learner disenrollment** and type \`DISENROLL SELECTED\`. Every checked learner is revalidated before any repository is deleted.`;
+  const body = `${REVIEW_DASHBOARD_MARKER}\n\nTick only the learners you want to disenroll. Checking a box does **not** change anything by itself.\n\n${tasks}\n\nAfter selecting, run **Actions → Approve inactive learner disenrollment** and type \`DISENROLL SELECTED\`. Every checked learner is revalidated first. Learner-owned repositories remain in the learner's account; High Q only pauses their programme enrollment.`;
 
   if (dashboard) {
     dashboard = await api(
       `/repos/${organization}/${STATE_REPOSITORY}/issues/${dashboard.number}`,
       {
-        method: "PATCH",
+        method: 'PATCH',
         body: JSON.stringify({ title: REVIEW_DASHBOARD_TITLE, body }),
       },
     );
   } else {
     dashboard = await api(`/repos/${organization}/${STATE_REPOSITORY}/issues`, {
-      method: "POST",
+      method: 'POST',
       body: JSON.stringify({ title: REVIEW_DASHBOARD_TITLE, body }),
     });
   }
@@ -153,17 +167,17 @@ for (const entry of await currentUnfinishedCourses()) {
   const inactiveDays = Math.floor((now - lastActivity.getTime()) / DAY_MS);
   const issue = await findOpenInactivityIssue(entry.repository);
   let trackedIssue = issue;
-  let state = "active";
+  let state = 'active';
   let notificationState = null;
 
   if (inactiveDays < WARNING_DAYS) {
     if (issue) await closeInactivityIssue(entry.repository, issue, entry.user);
     trackedIssue = null;
   } else if (inactiveDays < REVIEW_DAYS) {
-    state = "warning";
+    state = 'warning';
     if (!trackedIssue) {
       trackedIssue = await createWarningIssue(entry, lastActivity, inactiveDays);
-      notificationState = "warning";
+      notificationState = 'warning';
     }
     trackedIssue = await refreshIssue(
       entry,
@@ -173,19 +187,19 @@ for (const entry of await currentUnfinishedCourses()) {
       state,
     );
   } else {
-    state = "review";
+    state = 'review';
     if (!trackedIssue) {
       trackedIssue = await createWarningIssue(entry, lastActivity, inactiveDays);
-      notificationState = "review";
+      notificationState = 'review';
     }
-    if (trackedIssue.title !== "INACTIVE — DISENROLLMENT REVIEW") {
+    if (trackedIssue.title !== 'INACTIVE — DISENROLLMENT REVIEW') {
       trackedIssue = await markForReview(
         entry,
         trackedIssue,
         lastActivity,
         inactiveDays,
       );
-      notificationState = "review";
+      notificationState = 'review';
     }
     trackedIssue = await refreshIssue(
       entry,
@@ -210,7 +224,8 @@ for (const entry of await currentUnfinishedCourses()) {
   results.push({
     learner: entry.user.login,
     course: entry.course.course,
-    repository: entry.repository.name,
+    repository: repositoryFullName(entry.repository),
+    ownership: entry.repository?._highq?.ownership || 'organization',
     inactiveDays,
     lastActivity: lastActivity.toISOString(),
     state,
@@ -219,7 +234,7 @@ for (const entry of await currentUnfinishedCourses()) {
 }
 
 fs.writeFileSync(
-  "inactivity-email-queue.json",
+  'inactivity-email-queue.json',
   `${JSON.stringify(emailQueue, null, 2)}\n`,
 );
 console.log(`Queued ${emailQueue.length} direct inactivity email(s).`);
@@ -227,14 +242,15 @@ console.log(`Queued ${emailQueue.length} direct inactivity email(s).`);
 const dashboardUrl = await syncReviewDashboard(results);
 const lines = results
   .map((row) => {
-    const review = row.issueUrl ? `[open issue](${row.issueUrl})` : "—";
-    return `| @${row.learner} | ${row.course} | ${row.lastActivity} | ${row.inactiveDays} | ${row.state} | ${review} |`;
+    const review = row.issueUrl ? `[open issue](${row.issueUrl})` : '—';
+    const ownership = row.ownership === 'learner' ? 'learner' : 'academy';
+    return `| @${row.learner} | ${row.course} | ${ownership} | ${row.lastActivity} | ${row.inactiveDays} | ${row.state} | ${review} |`;
   })
-  .join("\n");
+  .join('\n');
 const dashboardLine = dashboardUrl
   ? `\n\n### Selection dashboard\n[Open the private checkbox review page](${dashboardUrl}) to tick the learners you want to disenroll.`
-  : "";
-const summary = `# Learner inactivity review\n\nRows marked **review** have passed the 4-day inactivity limit plus the 1-day grace period.${dashboardLine}\n\n| Learner | Current unfinished course | Last learner activity | Full inactive days | State | Review |\n| --- | --- | --- | ---: | --- | --- |\n${lines || "| — | No unfinished learner courses found | — | — | — | — |"}\n`;
+  : '';
+const summary = `# Learner inactivity review\n\nRows marked **review** have passed the 4-day inactivity limit plus the 1-day grace period.${dashboardLine}\n\n| Learner | Current unfinished course | Repo owner | Last learner activity | Full inactive days | State | Review |\n| --- | --- | --- | --- | ---: | --- | --- |\n${lines || '| — | No unfinished learner courses found | — | — | — | — | — |'}\n`;
 if (process.env.GITHUB_STEP_SUMMARY)
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 console.log(summary);

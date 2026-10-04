@@ -18,10 +18,13 @@ Grant the minimum permissions needed by the current Enrollment V2 code:
 
 - **Metadata:** Read
 - **Contents:** Read and write
+- **Workflows:** Read and write
 - **Issues:** Read and write
 - **Commit statuses:** Read and write
 - **Pull requests:** Read and write
 - **Administration:** Read and write
+
+`Workflows` write is required because the private High Q course copy includes trusted learner-facing workflow files under `.github/workflows/`.
 
 Administration write is used for creating/configuring the learner-owned repository and applying repository settings when GitHub permits them.
 

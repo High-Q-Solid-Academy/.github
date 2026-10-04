@@ -29,6 +29,7 @@ jobs:
         run: node gradebook/collect.mjs
 
       - name: Review learner inactivity
+        continue-on-error: true
         env:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
           CURRICULUM_ORG: High-Q-Solid-Academy

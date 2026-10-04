@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   approve:
-    name: Delete checked approved unfinished courses only
+    name: Apply checked learner disenrollments safely
     runs-on: ubuntu-latest
     environment: learner-disenrollment
     steps:
@@ -30,11 +30,32 @@ jobs:
           CURRICULUM_ORG: High-Q-Solid-Academy
         run: node gradebook/review-selection.mjs
 
-      - name: Preserve resume state and delete checked reviewed repositories
+      - name: Classify selected learners by repository ownership
+        id: ownership
         env:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
           CURRICULUM_ORG: High-Q-Solid-Academy
           STUDENT_USERNAMES: ${{ steps.selection.outputs.usernames }}
+        run: node gradebook/classify-disenrollment.mjs
+
+      - name: Pause selected learner-owned enrollments
+        if: steps.ownership.outputs.learner_owned != ''
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
+          HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
+          HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
+          STUDENT_USERNAMES: ${{ steps.ownership.outputs.learner_owned }}
+          DISENROLL_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node gradebook/pause-learner-owned.mjs
+
+      - name: Preserve and remove selected academy-owned course repos
+        if: steps.ownership.outputs.legacy != ''
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          STUDENT_USERNAMES: ${{ steps.ownership.outputs.legacy }}
           DISENROLL_CONFIRMATION: ${{ inputs.confirmation }}
         run: node gradebook/approve-disenrollment.mjs
 

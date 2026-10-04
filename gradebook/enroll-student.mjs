@@ -229,6 +229,18 @@ await writeLearnerRegistryRecord({
   repositoryName: result.repository,
   repositoryFullName: result.repositoryFullName,
   defaultBranch: result.branch,
+  repositories: [
+    {
+      courseId: first.id,
+      courseName: first.course,
+      repositoryOwner: result.repositoryOwner,
+      repositoryName: result.repository,
+      repositoryFullName: result.repositoryFullName,
+      defaultBranch: result.branch,
+      state: 'current',
+      startedAt: enrolledAt,
+    },
+  ],
   enrollment,
 });
 

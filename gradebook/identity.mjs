@@ -30,6 +30,15 @@ export function normalizeTrack(value, fallback = DEFAULT_TRACK) {
   return normalized;
 }
 
+export function normalizeEmail(value) {
+  const email = String(value || '').trim().toLowerCase();
+  if (!email) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('STUDENT_EMAIL must be a valid email address.');
+  }
+  return email;
+}
+
 export function assertRealNameMatches(expectedName, profileName) {
   const expected = normalizeName(expectedName);
   const profile = normalizeName(profileName);
@@ -56,10 +65,17 @@ export function enrollmentTrack(enrollment) {
   return normalizeTrack(enrollment?.track, DEFAULT_TRACK);
 }
 
-export function buildEnrollment(user, realName, track = DEFAULT_TRACK, enrolledAt = new Date().toISOString()) {
+export function buildEnrollment(
+  user,
+  realName,
+  track = DEFAULT_TRACK,
+  enrolledAt = new Date().toISOString(),
+  email = null,
+) {
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     realName: String(realName).trim(),
+    email: normalizeEmail(email),
     githubId: user.id,
     githubLoginAtEnrollment: user.login,
     githubProfileUrl: user.html_url,

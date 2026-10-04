@@ -6,13 +6,18 @@ import {
   createWarningIssue,
   currentUnfinishedCourses,
   DAY_MS,
+  ensureStateRepository,
   findOpenInactivityIssue,
   INACTIVITY_MARKER,
   lastLearnerActivity,
   markForReview,
   REVIEW_DAYS,
+  STATE_REPOSITORY,
   WARNING_DAYS,
 } from "./inactivity-lib.mjs";
+
+const REVIEW_DASHBOARD_MARKER = "<!-- highq-inactivity-review-dashboard -->";
+const REVIEW_DASHBOARD_TITLE = "Inactive learner review — select for disenrollment";
 
 if (!token) {
   console.error("CURRICULUM_ADMIN_TOKEN is required.");
@@ -79,6 +84,65 @@ function queueEmail(queue, entry, state, inactiveDays, lastActivity, issueUrl) {
     lastActivity: lastActivity.toISOString(),
     issueUrl: issueUrl || null,
   });
+}
+
+function checkedLearnersFromBody(body) {
+  const checked = new Set();
+  for (const match of String(body || "").matchAll(
+    /^- \[[xX]\] @([a-z\d](?:[a-z\d-]{0,37}[a-z\d])?)/gim,
+  )) {
+    checked.add(match[1].toLowerCase());
+  }
+  return checked;
+}
+
+async function syncReviewDashboard(results) {
+  const reviewRows = results.filter((row) => row.state === "review");
+  if (!reviewRows.length) return null;
+
+  await ensureStateRepository();
+  await api(`/repos/${organization}/${STATE_REPOSITORY}`, {
+    method: "PATCH",
+    body: JSON.stringify({ has_issues: true }),
+  });
+
+  const issues = await api(
+    `/repos/${organization}/${STATE_REPOSITORY}/issues?state=open&per_page=100`,
+  );
+  let dashboard = issues.find(
+    (issue) =>
+      !issue.pull_request &&
+      issue.body?.includes(REVIEW_DASHBOARD_MARKER),
+  );
+  const checked = checkedLearnersFromBody(dashboard?.body);
+
+  const tasks = reviewRows
+    .sort((a, b) => b.inactiveDays - a.inactiveDays)
+    .map((row) => {
+      const selected = checked.has(row.learner.toLowerCase()) ? "x" : " ";
+      const details = row.issueUrl ? ` — [review issue](${row.issueUrl})` : "";
+      return `- [${selected}] @${row.learner} — ${row.course} — ${row.inactiveDays} inactive days${details}`;
+    })
+    .join("\n");
+
+  const body = `${REVIEW_DASHBOARD_MARKER}\n\nTick only the learners you want to disenroll. Checking a box does **not** delete anything by itself.\n\n${tasks}\n\nAfter selecting, run **Actions → Approve inactive learner disenrollment** and type \`DISENROLL SELECTED\`. Every checked learner is revalidated before any repository is deleted.`;
+
+  if (dashboard) {
+    dashboard = await api(
+      `/repos/${organization}/${STATE_REPOSITORY}/issues/${dashboard.number}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ title: REVIEW_DASHBOARD_TITLE, body }),
+      },
+    );
+  } else {
+    dashboard = await api(`/repos/${organization}/${STATE_REPOSITORY}/issues`, {
+      method: "POST",
+      body: JSON.stringify({ title: REVIEW_DASHBOARD_TITLE, body }),
+    });
+  }
+
+  return dashboard.html_url || null;
 }
 
 const now = Date.now();
@@ -160,13 +224,17 @@ fs.writeFileSync(
 );
 console.log(`Queued ${emailQueue.length} direct inactivity email(s).`);
 
+const dashboardUrl = await syncReviewDashboard(results);
 const lines = results
   .map((row) => {
     const review = row.issueUrl ? `[open issue](${row.issueUrl})` : "—";
     return `| @${row.learner} | ${row.course} | ${row.lastActivity} | ${row.inactiveDays} | ${row.state} | ${review} |`;
   })
   .join("\n");
-const summary = `# Learner inactivity review\n\nRows marked **review** have passed the 4-day inactivity limit plus the 1-day grace period. Open the linked issue, check the learner's activity, then use **Actions → Approve inactive learner disenrollment** only if you decide to remove the current unfinished course.\n\n| Learner | Current unfinished course | Last learner activity | Full inactive days | State | Review |\n| --- | --- | --- | ---: | --- | --- |\n${lines || "| — | No unfinished learner courses found | — | — | — | — |"}\n`;
+const dashboardLine = dashboardUrl
+  ? `\n\n### Selection dashboard\n[Open the private checkbox review page](${dashboardUrl}) to tick the learners you want to disenroll.`
+  : "";
+const summary = `# Learner inactivity review\n\nRows marked **review** have passed the 4-day inactivity limit plus the 1-day grace period.${dashboardLine}\n\n| Learner | Current unfinished course | Last learner activity | Full inactive days | State | Review |\n| --- | --- | --- | ---: | --- | --- |\n${lines || "| — | No unfinished learner courses found | — | — | — | — |"}\n`;
 if (process.env.GITHUB_STEP_SUMMARY)
   fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 console.log(summary);

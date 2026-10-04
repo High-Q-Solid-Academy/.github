@@ -22,7 +22,7 @@ Prefixes are configured in [`gradebook/courses.json`](gradebook/courses.json). C
 
 1. In organization **Settings → Member privileges**, set the base repository permission to **None** and disable member-created organization repositories. Otherwise organization members can see every private course template and bypass the progression lock.
 2. Create a fine-grained GitHub personal access token from an organization-owned service account.
-3. Give the gradebook token read access to **Contents**, **Metadata** and **Commit statuses** for the student repositories.
+3. Give the gradebook token read access to **Contents**, **Metadata**, **Issues** and **Commit statuses** for the student repositories.
 4. In the `High-Q-Solid-Academy/.github` repository, open **Settings → Secrets and variables → Actions**.
 5. Add the token as a repository secret named `GRADEBOOK_TOKEN`.
 6. Open **Actions → Collect High Q student grades → Run workflow**.
@@ -31,7 +31,7 @@ Prefixes are configured in [`gradebook/courses.json`](gradebook/courses.json). C
 
 1. Make every course source repository a GitHub **template repository**.
 2. Make course templates and generated learner repositories **private**. A public template cannot be hidden from learners, so it cannot enforce the requested lock.
-3. Create a separate fine-grained service-account token with access to all academy course repositories. Under **Repository permissions**, select **Administration: Read and write**, **Contents: Read and write**, and **Commit statuses: Read-only**. Metadata read access is included automatically. GitHub has no separate "Collaborator management" permission: adding a repository collaborator, creating repositories and configuring branch protection are covered by **Administration: Read and write**.
+3. Create a separate fine-grained service-account token with access to all current and future academy course repositories. Under **Repository permissions**, select **Administration: Read and write**, **Contents: Read and write**, **Issues: Read and write**, and **Commit statuses: Read-only**. Metadata read access is included automatically. GitHub has no separate "Collaborator management" permission: adding a repository collaborator, creating repositories, deleting an approved current-course repository and configuring branch protection are covered by **Administration: Read and write**.
 4. Store it in this repository as `CURRICULUM_ADMIN_TOKEN`.
 5. Before enrollment, ask the learner to open **GitHub → Settings → Public profile → Name** and enter their real first name and surname.
 6. To start a learner, run **Actions → Enroll learner in first course**, enter the exact GitHub username and the same real name. Enrollment stops if the names do not match. Ask the learner to accept the collaborator invitation.
@@ -48,6 +48,23 @@ Generated repositories protect `main`: learners submit a pull request, the `Calc
 > **Private-repository plan requirement:** GitHub Free for organizations does not support protected branches on private repositories. The course-hiding system still works, but authoritative anti-tamper enforcement on private learner repositories requires GitHub Team, GitHub Enterprise Cloud or an eligible GitHub Education benefit. On GitHub Free, treat automated scores as provisional: review the learner's commits and grading-file diff before accepting a result, and do not approve changes to workflows, tests, scripts, package manifests or `.highq/enrollment.json`.
 
 Keep `GRADEBOOK_TOKEN` read-only. Do not reuse the more powerful curriculum administration token for gradebook collection.
+
+## Inactivity, review and resumable disenrollment
+
+The scheduled **Monitor learner inactivity** workflow evaluates the current unfinished course for every existing and future learner. It counts only activity made by the enrolled learner's immutable GitHub account ID. Instructor and maintainer changes, `MAVIS-creator`, bots, template synchronization and GitHub Actions do not reset the timer.
+
+- After four full days without learner activity, the workflow opens **INACTIVE — 1-DAY ACTIVITY WARNING** in the learner's current course repository and mentions the learner.
+- After one additional full day without activity, it changes the issue to **INACTIVE — DISENROLLMENT REVIEW**.
+- Learner activity before approval automatically closes the warning/review issue.
+- Monitoring never deletes a repository.
+
+To approve removal, open **Actions → Approve inactive learner disenrollment**. Enter the learner's current username and the exact confirmation `DISENROLL USERNAME`. The workflow rechecks the five-day inactivity requirement and review issue before doing anything. It then stores the course ID, curriculum position, enrollment track, last scores/statuses, completed checkpoints, last learner activity and a bounded snapshot of learner work in the private `highq-learner-records` repository. Only then does it delete the current unfinished course repository. Previously completed course repositories remain untouched.
+
+The first approved removal creates `highq-learner-records` automatically as a private organization repository. Confirm that `CURRICULUM_ADMIN_TOKEN` can access that repository; a fine-grained token restricted to an explicit repository list may need the new repository added after creation.
+
+To restore a returning learner, open **Actions → Resume paused learner**, enter the current username and `RESUME USERNAME`. The workflow recreates the removed course—not the first Git course—restores the saved exercise/project files in one commit, reapplies enrollment and branch protection, and sends repository access. The restored commit triggers the course grader so preserved checkpoints receive a fresh authoritative score.
+
+For an additional approval gate, create the repository environment **learner-disenrollment** under **Settings → Environments** and require the academy owner as reviewer. Both destructive and resume workflows use this environment. The exact confirmation text and runtime rechecks still apply even without environment protection.
 
 The workflow also runs daily at 7:15 PM West Africa Time. The summary lists each learner's real name, current GitHub username, immutable GitHub ID, course, score, identity status and details link. The complete records are available as the `highq-instructor-gradebook` artifact. Download `gradebook.html`, open it in a browser and use **Print** for paper records or **Save as PDF** for a digital signed copy.
 

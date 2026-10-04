@@ -1,0 +1,35 @@
+name: Approve inactive learner disenrollment
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: Learner's current GitHub username
+        required: true
+        type: string
+      confirmation:
+        description: Type DISENROLL followed by a space and the exact username
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  approve:
+    name: Delete approved current unfinished course only
+    runs-on: ubuntu-latest
+    environment: learner-disenrollment
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Preserve resume state and delete current unfinished repository
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          STUDENT_USERNAME: ${{ inputs.username }}
+          DISENROLL_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node gradebook/approve-disenrollment.mjs

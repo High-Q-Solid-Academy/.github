@@ -74,7 +74,7 @@ export async function writeEnrollment(repository, enrollment, branch = 'main') {
   });
 }
 
-export async function provisionCourse(course, student, apply, enrollment = null) {
+export async function provisionCourse(course, student, apply, enrollment = null, options = {}) {
   const repository = `${course.repositoryPrefix}${student}`;
   if (!apply) return { repository, action: 'would-create' };
 
@@ -93,6 +93,10 @@ export async function provisionCourse(course, student, apply, enrollment = null)
 
   if (enrollment) {
     await writeEnrollment(repository, enrollment, branch);
+  }
+
+  if (options.beforeProtect) {
+    await options.beforeProtect({ repository, branch });
   }
 
   await api(`/repos/${organization}/${repository}/collaborators/${student}`, {

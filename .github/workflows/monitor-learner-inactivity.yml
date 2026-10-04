@@ -1,0 +1,37 @@
+name: Monitor learner inactivity
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/monitor-learner-inactivity.yml
+      - gradebook/monitor-inactivity.mjs
+      - gradebook/inactivity-lib.mjs
+      - gradebook/courses.json
+  schedule:
+    - cron: "20 6 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: highq-inactivity-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    name: Review current unfinished learner courses
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Warn inactive learners and flag review cases
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+        run: node gradebook/monitor-inactivity.mjs

@@ -1,55 +1,25 @@
-# Learner inactivity policy
+# Learner inactivity and resumable disenrollment
 
-High-Q learner-course repositories use an inactivity review policy to keep the organization tidy without treating instructor/template maintenance as learner progress.
+High-Q evaluates only the learner's current unfinished course. Completed earlier courses and their progression records are never inactivity-cleanup targets.
 
-## Policy
+## Timeline
 
-- Inactivity threshold: **4 full days** with no qualifying learner-originated activity in the learner's current unfinished course repository.
-- Grace period after warning: **1 full day**.
-- Activity from `MAVIS-creator`, maintainers, template maintenance, bots, or GitHub Actions does **not** count as learner activity.
-- Existing learners and future learners are checked under the same rule.
-- A learner who resumes qualifying activity during the grace period has the inactivity episode cleared.
-- After the grace period, the repository is sent to **manual instructor review**. Nothing is deleted by the scanner.
-- Completed prior-course repositories are never inactivity-cleanup targets.
-- If learner activity attribution is unclear, the system opens a manual-review item rather than making a deletion recommendation.
+- After **4 full days** without qualifying learner-originated activity, the learner receives an issue warning in the current course repository.
+- The learner receives **1 additional full day** to resume.
+- At 5 full inactive days, the issue becomes **INACTIVE — DISENROLLMENT REVIEW**.
+- No scheduled process deletes a repository.
+- Learner activity before approval closes the warning automatically.
 
-## Daily scan
+Activity is attributed using the immutable GitHub account ID in `.highq/enrollment.json` and GitHub-recorded event timestamps. Commits and changes made by `MAVIS-creator`, instructors, maintainers, templates, bots, GitHub Actions and other automation do not reset the learner's timer.
 
-The existing `Collect High Q student grades` workflow also runs:
+## Manual approval
 
-```bash
-node gradebook/check-learner-inactivity.mjs
-```
+Run **Actions → Approve inactive learner disenrollment** with the learner's current username and the exact confirmation `DISENROLL USERNAME`.
 
-The scanner creates a warning issue inside the learner's current course repository after 4 full inactive days. The issue mentions the learner so the warning appears in their GitHub notifications. After one additional inactive day, the scanner creates an instructor review issue in the central `.github` repository.
+The workflow rechecks all safeguards, captures the current score/status, course position, completed labs/checkpoints and a bounded snapshot of learner exercise/project work, and saves it in the private `highq-learner-records` repository. Only after that record succeeds does it delete the current unfinished repository. Completed earlier course repositories remain intact.
 
-## Instructor approval
+## Return and resume
 
-Repository removal is intentionally a separate explicit admin action. The approval script validates that:
+Run **Actions → Resume paused learner** with `RESUME USERNAME`. The workflow recreates the course from which the learner was removed, restores the saved exercise/project files in one commit, reapplies enrollment and protection, and reruns grading. The ordinary enrollment workflow refuses to restart a learner who has a paused-course record.
 
-1. the repository belongs to a configured learner course;
-2. an enrollment record exists and resolves to the learner;
-3. the repository is the learner's current/highest course, not an earlier completed course;
-4. the course has not already passed its automated completion gate;
-5. an open inactivity-review issue exists;
-6. the 1-day grace deadline has passed; and
-7. the instructor supplies the exact confirmation string.
-
-From a secure admin checkout with `CURRICULUM_ADMIN_TOKEN` and `CURRICULUM_ORG=High-Q-Solid-Academy` configured:
-
-```bash
-COURSE_REPOSITORY='course-name-student' \
-DISENROLL_CONFIRMATION='DISENROLL course-name-student' \
-CURRICULUM_INSTRUCTOR_LOGIN='MAVIS-creator' \
-node gradebook/approve-inactive-disenrollment.mjs
-```
-
-The script posts a final notice to the learner before repository removal, preserves earlier completed course repositories, records the deletion in the central review issue, and stores the course ID to resume from later.
-
-## Re-enrollment
-
-The normal enrollment script checks central completed inactivity records. If a learner was previously removed for inactivity, re-enrollment recreates the removed course rather than restarting the learner at Git foundations. Earlier completed courses remain untouched.
-
-## Important boundary
-
-The activity scanner never deletes a learner repository automatically. The destructive step requires a separate explicit instructor/admin confirmation.
+For an additional human gate, configure the `learner-disenrollment` GitHub environment with the academy owner as required reviewer.

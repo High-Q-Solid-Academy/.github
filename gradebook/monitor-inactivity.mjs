@@ -43,9 +43,6 @@ async function refreshIssue(entry, issue, lastActivity, inactiveDays, state) {
     },
   );
 
-  // Assignment creates an additional GitHub notification for the learner.
-  // If the collaborator invitation has not been accepted yet, keep the
-  // inactivity run successful and rely on the @mention notification instead.
   try {
     await api(
       `/repos/${organization}/${entry.repository.name}/issues/${issue.number}/assignees`,
@@ -63,22 +60,47 @@ async function refreshIssue(entry, issue, lastActivity, inactiveDays, state) {
   return updated;
 }
 
+function queueEmail(queue, entry, state, inactiveDays, lastActivity, issueUrl) {
+  const email = String(entry.enrollment?.email || "").trim();
+  if (!email) {
+    console.warn(
+      `No stored learner email for @${entry.user.login}; GitHub issue notification will be used only.`,
+    );
+    return;
+  }
+  queue.push({
+    state,
+    email,
+    learner: entry.user.login,
+    realName: entry.enrollment?.realName || entry.user.login,
+    course: entry.course.course,
+    repository: entry.repository.name,
+    inactiveDays,
+    lastActivity: lastActivity.toISOString(),
+    issueUrl: issueUrl || null,
+  });
+}
+
 const now = Date.now();
 const results = [];
+const emailQueue = [];
 for (const entry of await currentUnfinishedCourses()) {
   const lastActivity = await lastLearnerActivity(entry.repository, entry.user);
   const inactiveDays = Math.floor((now - lastActivity.getTime()) / DAY_MS);
   const issue = await findOpenInactivityIssue(entry.repository);
   let trackedIssue = issue;
   let state = "active";
+  let notificationState = null;
 
   if (inactiveDays < WARNING_DAYS) {
     if (issue) await closeInactivityIssue(entry.repository, issue, entry.user);
     trackedIssue = null;
   } else if (inactiveDays < REVIEW_DAYS) {
     state = "warning";
-    if (!trackedIssue)
+    if (!trackedIssue) {
       trackedIssue = await createWarningIssue(entry, lastActivity, inactiveDays);
+      notificationState = "warning";
+    }
     trackedIssue = await refreshIssue(
       entry,
       trackedIssue,
@@ -90,6 +112,7 @@ for (const entry of await currentUnfinishedCourses()) {
     state = "review";
     if (!trackedIssue) {
       trackedIssue = await createWarningIssue(entry, lastActivity, inactiveDays);
+      notificationState = "review";
     }
     if (trackedIssue.title !== "INACTIVE — DISENROLLMENT REVIEW") {
       trackedIssue = await markForReview(
@@ -98,6 +121,7 @@ for (const entry of await currentUnfinishedCourses()) {
         lastActivity,
         inactiveDays,
       );
+      notificationState = "review";
     }
     trackedIssue = await refreshIssue(
       entry,
@@ -105,6 +129,17 @@ for (const entry of await currentUnfinishedCourses()) {
       lastActivity,
       inactiveDays,
       state,
+    );
+  }
+
+  if (notificationState) {
+    queueEmail(
+      emailQueue,
+      entry,
+      notificationState,
+      inactiveDays,
+      lastActivity,
+      trackedIssue?.html_url,
     );
   }
 
@@ -118,6 +153,12 @@ for (const entry of await currentUnfinishedCourses()) {
     issueUrl: trackedIssue?.html_url || null,
   });
 }
+
+fs.writeFileSync(
+  "inactivity-email-queue.json",
+  `${JSON.stringify(emailQueue, null, 2)}\n`,
+);
+console.log(`Queued ${emailQueue.length} direct inactivity email(s).`);
 
 const lines = results
   .map((row) => {

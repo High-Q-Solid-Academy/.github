@@ -11,6 +11,10 @@ on:
         description: Learner's full real name (must match GitHub profile Name)
         required: true
         type: string
+      email:
+        description: Learner's email address for High Q course notifications
+        required: true
+        type: string
       programme:
         description: Programme / curriculum track
         required: true
@@ -39,5 +43,6 @@ jobs:
           CURRICULUM_ORG: High-Q-Solid-Academy
           STUDENT_USERNAME: ${{ inputs.username }}
           REAL_NAME: ${{ inputs.real_name }}
+          STUDENT_EMAIL: ${{ inputs.email }}
           STUDENT_TRACK: ${{ inputs.programme }}
         run: node gradebook/enroll-student.mjs

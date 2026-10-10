@@ -6,7 +6,7 @@ test('evidence URL must match repository', () => { assert.equal(evidenceUrl('htt
 import { officialPayload } from './official-enrollment-sync.mjs';
 const verifiedUser = { id: 2525, login: 'learner', name: 'Sample Learner' };
 const verifiedEnrollment = { schemaVersion:4, enrolledAt:'2026-10-01T09:00:00Z', githubId:2525, githubLoginAtEnrollment:'learner', realName:'Sample Learner', track:'computer-science' };
-const gitCourse = {id:'git', humanReviewRequired:false};
+const gitCourse = {id:'git', repositoryPrefix:'course-git-github-', humanReviewRequired:false};
 const officialGrade = {sha:'a'.repeat(40), score:86, passed:true, verifiedBy:'academy-git-rubric-v1', total:7, completed:6};
 test('academy V1 enrollment imports official score', () => {
  const repository={id:712,owner:{login:'High-Q-Solid-Academy'},name:'course-git-github-learner',full_name:'High-Q-Solid-Academy/course-git-github-learner'};

@@ -69,6 +69,7 @@ export async function collectOfficialPayloads(deps={}) {
   const userRequest=deps.api || api;
   const payloads=[];
   const skipped=[];
+  const rubricFailures=[];
   for (const repository of managed) {
     const course=matchCourse(repository,curriculum.courses);
     if (!course) continue;
@@ -87,7 +88,19 @@ export async function collectOfficialPayloads(deps={}) {
       if (!/^[0-9a-f]{40}$/.test(String(head?.sha))) throw Error('Repository HEAD not verifiable');
       let grade={sha:head.sha};
       stage='rubric';
-      if (course.id==='git') grade=await gradeGitRepository(repository,Number(enrollment.githubId),{request:makeRequest});
+      if (course.id==='git') {
+        try {
+          grade=await gradeGitRepository(repository,Number(enrollment.githubId),{request:makeRequest});
+        } catch (error) {
+          // Enrollment evidence can still be imported while the grade stays locked.
+          // No exception or learner-controlled status may turn it into a pass.
+          const category=Number.isInteger(error?.status) ? 'http_'+error.status :
+            String(error?.message||'').includes('contents response') ? 'invalid_file_api' :
+            String(error?.message||'').includes('pin the graded') ? 'invalid_head' :
+            'rubric_evidence_unavailable';
+          rubricFailures.push({category});
+        }
+      }
       stage='binding';
       const data=officialPayload({repository,course,enrollment,user,grade});
       payloads.push(data);
@@ -96,10 +109,10 @@ export async function collectOfficialPayloads(deps={}) {
       skipped.push({stage,course:course.id});
     }
   }
-  return {payloads,skipped};
+  return {payloads,skipped,rubricFailures};
 }
 export async function syncOfficialEnrollments(env=process.env,deps={}) {
-  const {payloads,skipped}=await collectOfficialPayloads(deps);
+  const {payloads,skipped,rubricFailures}=await collectOfficialPayloads(deps);
   const armed=env.HIGHQ_OFFICIAL_GRADE_SYNC_ENABLED==='1';
   let synced=0;
   if (armed) {
@@ -120,7 +133,7 @@ export async function syncOfficialEnrollments(env=process.env,deps={}) {
       synced++;
     }
   }
-  return {discovered:payloads.length,synced,skipped,
+  return {discovered:payloads.length,synced,skipped,rubricFailures,
     officialPasses:payloads.filter(r=>r.grade_context==='highq/official-grade' && r.grade_state==='success').length,
     pending:payloads.filter(r=>r.grade_context!=='highq/official-grade').length,
     mode:armed?'APPLY':'DRY_RUN'};
@@ -131,6 +144,8 @@ if (process.argv[1] && import.meta.url===pathToFileURL(path.resolve(process.argv
     mode:report.mode,discovered:report.discovered,synced:report.synced,
     officialPasses:report.officialPasses,pending:report.pending,
     skipped:report.skipped.length,
+    rubricPending:report.rubricFailures.length,
+    rubricFailureTypes:Object.fromEntries([...new Set(report.rubricFailures.map(x=>x.category))].map(category=>[category,report.rubricFailures.filter(x=>x.category===category).length])),
     skipStages:Object.fromEntries([...new Set(report.skipped.map(e=>e.stage))].map(stage=>[stage,report.skipped.filter(e=>e.stage===stage).length])),
   };
   console.log(JSON.stringify(summary,null,2));

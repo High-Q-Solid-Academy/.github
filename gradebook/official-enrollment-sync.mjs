@@ -56,6 +56,7 @@ export function officialPayload({repository,course,enrollment,user,grade}) {
     official_verifier:verified?grade.verifiedBy:null,
     official_checks_total:verified?grade.total:null,
     official_checks_passed:verified?grade.completed:null,
+    final_lab_verified:verified ? Boolean(grade.checks?.find(item=>item.lab===7)?.passed) : false,
     human_required: Boolean(course.humanReviewRequired),
     // Only the Academy instructor-controlled capstone review can set human grades.
     // It is NOT derived from learner-controlled status contexts.

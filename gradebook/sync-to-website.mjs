@@ -27,6 +27,7 @@ for (const row of gradebook.rows || []) {
     github_login: row.student,
     real_name: row.realName,
     track: row.track,
+    learner_status: row.activityState === 'paused' ? 'paused' : 'active',
     enrollment_version: row.ownership === 'learner' ? 'v2' : 'v1',
     course_id: row.courseId,
     repository_full_name: row.repository,

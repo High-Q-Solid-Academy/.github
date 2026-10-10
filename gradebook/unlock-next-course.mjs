@@ -22,6 +22,7 @@ import {
   listManagedRepositories,
 } from './managed-repositories.mjs';
 import { writeLearnerRegistryRecord } from './learner-registry.mjs';
+import { websiteClearance } from './website-clearance.mjs';
 
 if (!token) {
   console.error('CURRICULUM_ADMIN_TOKEN is required.');
@@ -132,6 +133,24 @@ for (const repository of repositories) {
       });
       continue;
     }
+  }
+
+  // WEBSITE COURSE COMPLETION GATE: mandatory even for the scheduled APPLY job.
+  // A GitHub grade and capstone alone no longer confer enrollment rights.
+  const cleared = await websiteClearance({
+    githubId: enrollment.githubId,
+    courseId: current.id,
+    targetCourseId: next.id,
+    track,
+  });
+  if (!cleared) {
+    results.push({
+      student, realName: enrollment.realName, track,
+      ownership: learnerOwned ? 'learner' : 'academy',
+      passed: current.course, score, humanScore,
+      unlocked: next.course, action: 'blocked-by-website-course-clearance',
+    });
+    continue;
   }
 
   if (learnerOwned) {

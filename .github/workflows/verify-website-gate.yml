@@ -5,7 +5,6 @@ on:
       - 'gradebook/website-clearance.mjs'
       - 'gradebook/website-clearance.test.mjs'
       - 'gradebook/unlock-next-course.mjs'
-      - 'gradebook/sync-to-website.mjs'
       - 'gradebook/reconcile-website-grants.mjs'
       - 'gradebook/official-git-rubric.mjs'
       - 'gradebook/official-enrollment-sync.mjs'
@@ -25,7 +24,6 @@ jobs:
           node-version: '24'
       - run: node --check gradebook/website-clearance.mjs
       - run: node --check gradebook/unlock-next-course.mjs
-      - run: node --check gradebook/sync-to-website.mjs
       - run: node --check gradebook/reconcile-website-grants.mjs
       - run: node --check gradebook/official-git-rubric.mjs
       - run: node --check gradebook/official-enrollment-sync.mjs

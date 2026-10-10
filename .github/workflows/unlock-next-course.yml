@@ -24,6 +24,18 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - name: Reconcile interrupted V2 website acknowledgements
+        env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
+          HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
+          HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
+          HIGHQ_CERT_GATE_URL: ${{ vars.HIGHQ_CERT_GATE_URL }}
+          HIGHQ_PROGRESS_API_TOKEN: ${{ secrets.HIGHQ_PROGRESS_API_TOKEN }}
+          APPLY_UNLOCKS: ${{ github.event_name == 'schedule' || inputs.apply }}
+        run: node gradebook/reconcile-website-grants.mjs
+
       - name: Provision newly unlocked courses
         env:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}

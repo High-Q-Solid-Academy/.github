@@ -22,7 +22,7 @@ import {
   listManagedRepositories,
 } from './managed-repositories.mjs';
 import { writeLearnerRegistryRecord } from './learner-registry.mjs';
-import { websiteClearance } from './website-clearance.mjs';
+import { websiteClearance, websiteConfirmProvision } from './website-clearance.mjs';
 
 if (!token) {
   console.error('CURRICULUM_ADMIN_TOKEN is required.');
@@ -222,6 +222,12 @@ for (const repository of repositories) {
         enrollment: finalEnrollment,
         repositories: history,
       });
+      await websiteConfirmProvision({
+        githubId: enrollment.githubId,
+        courseId: current.id,
+        targetCourseId: next.id,
+        repositoryFullName: outcome.repositoryFullName,
+      });
     }
 
     results.push({
@@ -251,6 +257,14 @@ for (const repository of repositories) {
     apply,
     normalizedEnrollment,
   );
+  if (apply) {
+    await websiteConfirmProvision({
+      githubId: enrollment.githubId,
+      courseId: current.id,
+      targetCourseId: next.id,
+      repositoryFullName: organization + '/' + outcome.repository,
+    });
+  }
   results.push({
     student,
     realName: enrollment.realName,

@@ -31,5 +31,7 @@ jobs:
           HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
           HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
           HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
+          HIGHQ_CERT_GATE_URL: ${{ vars.HIGHQ_CERT_GATE_URL }}
+          HIGHQ_PROGRESS_API_TOKEN: ${{ secrets.HIGHQ_PROGRESS_API_TOKEN }}
           APPLY_UNLOCKS: ${{ github.event_name == 'schedule' || inputs.apply }}
         run: node gradebook/unlock-next-course.mjs

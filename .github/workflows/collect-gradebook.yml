@@ -33,11 +33,17 @@ jobs:
           HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
         run: node gradebook/collect.mjs
 
-      - name: Sync trusted course records to HIGH-Q website
+      - name: Verify official V1/V2 enrollments and sync to HIGH-Q when explicitly enabled
         env:
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
+          HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
+          HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
+          HIGHQ_OFFICIAL_GRADE_SYNC_ENABLED: ${{ vars.HIGHQ_OFFICIAL_GRADE_SYNC_ENABLED }}
           HIGHQ_GRADE_SYNC_URL: ${{ vars.HIGHQ_GRADE_SYNC_URL }}
           HIGHQ_GRADE_SYNC_SECRET: ${{ secrets.HIGHQ_GRADE_SYNC_SECRET }}
-        run: node gradebook/sync-to-website.mjs
+        run: node gradebook/official-enrollment-sync.mjs
 
       - name: Create styled printable report
         run: node gradebook/render-report.mjs

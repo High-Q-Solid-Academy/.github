@@ -1,0 +1,24 @@
+name: HIGH-Q assessment website progression gate checks
+on:
+  pull_request:
+    paths:
+      - 'gradebook/website-clearance.mjs'
+      - 'gradebook/website-clearance.test.mjs'
+      - 'gradebook/unlock-next-course.mjs'
+      - 'gradebook/sync-to-website.mjs'
+      - '.github/workflows/verify-website-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check gradebook/website-clearance.mjs
+      - run: node --check gradebook/unlock-next-course.mjs
+      - run: node --check gradebook/sync-to-website.mjs
+      - run: node --test gradebook/website-clearance.test.mjs

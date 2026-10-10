@@ -73,22 +73,27 @@ export async function collectOfficialPayloads(deps={}) {
     const course=matchCourse(repository,curriculum.courses);
     if (!course) continue;
     const fullName=repositoryFullName(repository);
+    let stage='enrollment';
     try {
       // No name-based fallback: V1 and V2 must carry Academy enrollment metadata.
       const file=await makeRequest(repository,'/contents/'+enrollmentPath()+'?ref='+encodeURIComponent(repository.default_branch));
       if (file?.encoding!=='base64' || file?.type!=='file') throw Error('Academy enrollment file missing');
       const enrollment=decodeEnrollment(file.content);
       if (!enrollment?.githubId) throw Error('Enrollment has no immutable GitHub ID');
+      stage='identity';
       const user=await userRequest('/user/'+Number(enrollment.githubId));
+      stage='head';
       const head=await makeRequest(repository,'/commits/'+encodeURIComponent(repository.default_branch));
       if (!/^[0-9a-f]{40}$/.test(String(head?.sha))) throw Error('Repository HEAD not verifiable');
       let grade={sha:head.sha};
+      stage='rubric';
       if (course.id==='git') grade=await gradeGitRepository(repository,Number(enrollment.githubId),{request:makeRequest});
+      stage='binding';
       const data=officialPayload({repository,course,enrollment,user,grade});
       payloads.push(data);
     } catch (error) {
       // Never downgrade an error to an "active/passed" student. Report only.
-      skipped.push({repository:fullName,course:course.id,reason:String(error.message).slice(0,180)});
+      skipped.push({stage,course:course.id});
     }
   }
   return {payloads,skipped};
@@ -126,6 +131,7 @@ if (process.argv[1] && import.meta.url===pathToFileURL(path.resolve(process.argv
     mode:report.mode,discovered:report.discovered,synced:report.synced,
     officialPasses:report.officialPasses,pending:report.pending,
     skipped:report.skipped.length,
+    skipStages:Object.fromEntries([...new Set(report.skipped.map(e=>e.stage))].map(stage=>[stage,report.skipped.filter(e=>e.stage===stage).length])),
   };
   console.log(JSON.stringify(summary,null,2));
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,

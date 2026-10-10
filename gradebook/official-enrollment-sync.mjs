@@ -90,11 +90,24 @@ export async function collectOfficialPayloads(deps={}) {
       stage='rubric';
       if (course.id==='git') {
         try {
-          grade=await gradeGitRepository(repository,Number(enrollment.githubId),{request:makeRequest});
+          let endpointClass='unknown';
+          const tracedRequest=(r,route,options={})=>{
+            endpointClass=String(route).includes('/contents/')?'contents':
+              String(route).includes('/pulls')?'pull_requests':
+              String(route).includes('/issues')?'issues':
+              String(route).includes('/commits/')?'commits':'other';
+            return makeRequest(r,route,options);
+          };
+          try {
+            grade=await gradeGitRepository(repository,Number(enrollment.githubId),{request:tracedRequest});
+          } catch (e) {
+            e.stageCategory=endpointClass;
+            throw e;
+          }
         } catch (error) {
           // Enrollment evidence can still be imported while the grade stays locked.
           // No exception or learner-controlled status may turn it into a pass.
-          const category=Number.isInteger(error?.status) ? 'http_'+error.status :
+          const category=Number.isInteger(error?.status) ? (String(error?.stageCategory||'unknown')+'_http_'+error.status) :
             String(error?.message||'').includes('contents response') ? 'invalid_file_api' :
             String(error?.message||'').includes('pin the graded') ? 'invalid_head' :
             'rubric_evidence_unavailable';

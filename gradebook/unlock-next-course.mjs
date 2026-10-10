@@ -99,6 +99,22 @@ for (const repository of repositories) {
   const student = currentUser.login;
 
   if (!learnerOwned && legacyRepositoryNames.has(`${next.repositoryPrefix}${student}`)) {
+    // Previous run may have created the repo before site acknowledgment succeeded.
+    // Do not create duplicates; complete only a valid outstanding website grant.
+    const cleared = await websiteClearance({
+      githubId: enrollment.githubId,
+      courseId: current.id,
+      targetCourseId: next.id,
+      track,
+    });
+    if (cleared && apply) {
+      await websiteConfirmProvision({
+        githubId: enrollment.githubId,
+        courseId: current.id,
+        targetCourseId: next.id,
+        repositoryFullName: organization + '/' + next.repositoryPrefix + student,
+      });
+    }
     continue;
   }
 

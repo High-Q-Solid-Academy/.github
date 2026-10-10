@@ -7,6 +7,10 @@ on:
       - 'gradebook/unlock-next-course.mjs'
       - 'gradebook/sync-to-website.mjs'
       - 'gradebook/reconcile-website-grants.mjs'
+      - 'gradebook/official-git-rubric.mjs'
+      - 'gradebook/official-enrollment-sync.mjs'
+      - 'gradebook/official-enrollment-sync.test.mjs'
+      - '.github/workflows/collect-gradebook.yml'
       - '.github/workflows/verify-website-gate.yml'
   workflow_dispatch:
 permissions:
@@ -23,4 +27,7 @@ jobs:
       - run: node --check gradebook/unlock-next-course.mjs
       - run: node --check gradebook/sync-to-website.mjs
       - run: node --check gradebook/reconcile-website-grants.mjs
+      - run: node --check gradebook/official-git-rubric.mjs
+      - run: node --check gradebook/official-enrollment-sync.mjs
+      - run: node --test gradebook/official-enrollment-sync.test.mjs
       - run: node --test gradebook/website-clearance.test.mjs

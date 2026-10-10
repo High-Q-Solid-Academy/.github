@@ -86,7 +86,7 @@ export async function gradeGitRepository(repository, enrolledGithubId, options={
   const completed=checks.filter(Boolean).length;
   const score=Math.round(completed*100/7);
   // Practical platform evidence is mandatory; no pass by filling text files alone.
-  const passed=score>=70 && checks[1] && checks[2] && checks[3] && checks[4];
+  const passed=score>=70 && checks[1] && checks[2] && checks[3] && checks[4] && checks[6];
   return {
     courseId:'git',sha,score,completed,total:7,
     passed,context:'highq/official-grade',verifiedBy:'academy-git-rubric-v1',

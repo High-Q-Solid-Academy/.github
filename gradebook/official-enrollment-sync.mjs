@@ -30,6 +30,11 @@ export function officialPayload({repository,course,enrollment,user,grade}) {
     if (String(repository.owner?.login).toLowerCase()!==organization.toLowerCase()) throw Error('V1 repo must be Academy-owned');
     // V1 binding must have a recorded Academy enrollment, not inferred from repo name.
     if (!enrollment.schemaVersion || !enrollment.enrolledAt) throw Error('V1 enrollment needs trusted backfill');
+    const expectedPrefix=course.repositoryPrefix;
+    const expectedLogin=String(enrollment.githubLoginAtEnrollment || user.login).toLowerCase();
+    if (String(repository.name).toLowerCase()!==String(expectedPrefix+expectedLogin).toLowerCase()) {
+      throw Error('V1 enrollment repository does not match recorded learner');
+    }
   }
   const explicitStatus=v2 ? String(record.status || 'active').toLowerCase() : 'active';
   if (!['active','paused'].includes(explicitStatus)) throw Error('Inactive/enrollment unrecognized; instructor review needed');
@@ -121,7 +126,6 @@ if (process.argv[1] && import.meta.url===pathToFileURL(path.resolve(process.argv
     mode:report.mode,discovered:report.discovered,synced:report.synced,
     officialPasses:report.officialPasses,pending:report.pending,
     skipped:report.skipped.length,
-    skippedReasons:report.skipped.slice(0,30),
   };
   console.log(JSON.stringify(summary,null,2));
   if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,

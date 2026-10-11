@@ -78,6 +78,22 @@ export async function installationForUser(username) {
   }
 }
 
+export async function installationForOrganization(organization) {
+  const login = String(organization || '').trim();
+  if (!login) throw new Error('An organization is required to resolve a GitHub App installation.');
+  try {
+    return await appRequest(`/orgs/${encodeURIComponent(login)}/installation`);
+  } catch (error) {
+    if (error.status === 404) {
+      const installUrl = githubAppInstallUrl();
+      throw new Error(
+        `High Q GitHub App is not installed on ${login}.${installUrl ? ` Install it first: ${installUrl}` : ''}`,
+      );
+    }
+    throw error;
+  }
+}
+
 export async function installationToken(installationId) {
   const id = Number(installationId);
   if (!Number.isFinite(id)) throw new Error('A valid GitHub App installation ID is required.');

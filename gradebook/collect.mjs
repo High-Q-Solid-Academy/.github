@@ -117,6 +117,8 @@ for (const repository of repositories) {
       ...identity,
       repository: repositoryFullName(repository),
       repositoryName: repository.name,
+      repositoryId: repository.id,
+      headSha: status.sha,
       repositoryState: repository?._highq?.repositoryState || 'legacy',
       score,
       automatedContext: gradeStatus?.context || null,

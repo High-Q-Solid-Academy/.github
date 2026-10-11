@@ -22,6 +22,7 @@ import {
   listManagedRepositories,
 } from './managed-repositories.mjs';
 import { writeLearnerRegistryRecord } from './learner-registry.mjs';
+import { websiteClearance, websiteConfirmProvision } from './website-clearance.mjs';
 
 if (!token) {
   console.error('CURRICULUM_ADMIN_TOKEN is required.');
@@ -98,6 +99,22 @@ for (const repository of repositories) {
   const student = currentUser.login;
 
   if (!learnerOwned && legacyRepositoryNames.has(`${next.repositoryPrefix}${student}`)) {
+    // Previous run may have created the repo before site acknowledgment succeeded.
+    // Do not create duplicates; complete only a valid outstanding website grant.
+    const cleared = await websiteClearance({
+      githubId: enrollment.githubId,
+      courseId: current.id,
+      targetCourseId: next.id,
+      track,
+    });
+    if (cleared && apply) {
+      await websiteConfirmProvision({
+        githubId: enrollment.githubId,
+        courseId: current.id,
+        targetCourseId: next.id,
+        repositoryFullName: organization + '/' + next.repositoryPrefix + student,
+      });
+    }
     continue;
   }
 
@@ -132,6 +149,24 @@ for (const repository of repositories) {
       });
       continue;
     }
+  }
+
+  // WEBSITE COURSE COMPLETION GATE: mandatory even for the scheduled APPLY job.
+  // A GitHub grade and capstone alone no longer confer enrollment rights.
+  const cleared = await websiteClearance({
+    githubId: enrollment.githubId,
+    courseId: current.id,
+    targetCourseId: next.id,
+    track,
+  });
+  if (!cleared) {
+    results.push({
+      student, realName: enrollment.realName, track,
+      ownership: learnerOwned ? 'learner' : 'academy',
+      passed: current.course, score, humanScore,
+      unlocked: next.course, action: 'blocked-by-website-course-clearance',
+    });
+    continue;
   }
 
   if (learnerOwned) {
@@ -203,6 +238,12 @@ for (const repository of repositories) {
         enrollment: finalEnrollment,
         repositories: history,
       });
+      await websiteConfirmProvision({
+        githubId: enrollment.githubId,
+        courseId: current.id,
+        targetCourseId: next.id,
+        repositoryFullName: outcome.repositoryFullName,
+      });
     }
 
     results.push({
@@ -232,6 +273,14 @@ for (const repository of repositories) {
     apply,
     normalizedEnrollment,
   );
+  if (apply) {
+    await websiteConfirmProvision({
+      githubId: enrollment.githubId,
+      courseId: current.id,
+      targetCourseId: next.id,
+      repositoryFullName: organization + '/' + outcome.repository,
+    });
+  }
   results.push({
     student,
     realName: enrollment.realName,

@@ -1,0 +1,51 @@
+name: HIGH-Q assessment website progression gate checks
+on:
+  pull_request:
+    paths:
+      - 'gradebook/website-clearance.mjs'
+      - 'gradebook/website-clearance.test.mjs'
+      - 'gradebook/unlock-next-course.mjs'
+      - 'gradebook/reconcile-website-grants.mjs'
+      - 'gradebook/official-git-rubric.mjs'
+      - 'gradebook/official-enrollment-sync.mjs'
+      - 'gradebook/official-enrollment-sync.test.mjs'
+      - '.github/workflows/collect-gradebook.yml'
+      - '.github/workflows/verify-website-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check gradebook/website-clearance.mjs
+      - run: node --check gradebook/unlock-next-course.mjs
+      - run: node --check gradebook/reconcile-website-grants.mjs
+      - run: node --check gradebook/official-git-rubric.mjs
+      - run: node --check gradebook/official-enrollment-sync.mjs
+      - run: node --test gradebook/official-enrollment-sync.test.mjs
+      - run: node --test gradebook/website-clearance.test.mjs
+
+  official-dry-run:
+    name: Read-only V1/V2 enrollment audit
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify enrollment and grades without website writes
+        env:
+          CURRICULUM_ORG: High-Q-Solid-Academy
+          CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
+          HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
+          HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
+          HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
+          HIGHQ_OFFICIAL_GRADE_SYNC_ENABLED: '0'
+        run: node gradebook/official-enrollment-sync.mjs

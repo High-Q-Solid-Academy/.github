@@ -1,6 +1,8 @@
 import process from 'node:process';
 import { enrollmentPath } from './identity.mjs';
 import {
+  githubAppConfigured,
+  installationForOrganization,
   installationForUser,
   installationToken,
   installationTokenForUser,
@@ -61,7 +63,16 @@ export function repositoryFullName(repository) {
 
 export async function repositoryToken(repository) {
   const owner = repositoryOwner(repository);
-  if (owner.toLowerCase() === organization.toLowerCase()) return token;
+  if (owner.toLowerCase() === organization.toLowerCase()) {
+    // Official evidence reads need pull-request and issue permissions. Prefer
+    // the existing Academy App installation instead of a legacy PAT whenever
+    // App credentials are configured.
+    if (githubAppConfigured()) {
+      const installation = await installationForOrganization(organization);
+      return installationToken(installation.id);
+    }
+    return token;
+  }
   if (repository?._highq?.installationId) {
     return installationToken(repository._highq.installationId);
   }

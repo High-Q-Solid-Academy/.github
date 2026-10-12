@@ -26,7 +26,7 @@ Grant the minimum permissions needed by the current Enrollment V2 code:
 
 `Workflows` write is required because the private High Q course copy includes trusted learner-facing workflow files under `.github/workflows/`.
 
-Administration write is used for creating/configuring the learner-owned repository and applying repository settings when GitHub permits them.
+Administration write is used for configuring the learner-owned repository and applying repository settings when GitHub permits them. GitHub App installation tokens cannot create a personal repository through `POST /user/repos`; that endpoint requires a user access token. The learner therefore creates each expected empty private repository before provisioning.
 
 The App does not need permission to delete a learner-owned repository. High Q never deletes Enrollment V2 personal repositories during inactivity disenrollment.
 
@@ -59,19 +59,20 @@ Create these Actions secrets:
 1. Learner creates/uses their personal GitHub account.
 2. Learner sets their real **Name** on the GitHub public profile.
 3. Learner installs the High Q GitHub App on their account.
-4. Instructor opens **Actions → Enroll learner in programme** in `High-Q-Solid-Academy/.github`.
-5. Enter:
+4. Learner creates the exact expected repository as an **empty private repository**, without a README, license or `.gitignore`, and grants the App access. For the first course this is `highq-git-github`.
+5. Instructor opens **Actions → Enroll learner in programme** in `High-Q-Solid-Academy/.github`.
+6. Enter:
    - exact GitHub username
    - real name
    - email address
    - programme
-6. Run the workflow.
+7. Run the workflow.
 
-For a brand-new learner, High Q creates a private repository such as:
+For a brand-new learner, High Q verifies and provisions the pre-created private repository:
 
 `learner/highq-git-github`
 
-The repository is owned by the learner. High Q retains curriculum access through the GitHub App installation.
+The repository is owned by the learner. High Q refuses public, non-empty, incorrectly named or inaccessible repositories, then imports the private curriculum through the GitHub App installation. The same rule applies to later courses: the progression workflow reports the next expected `highq-*` repository name, and provisioning continues only after the learner creates that exact empty private repository.
 
 ## 6. What stays in the academy organization
 

@@ -1,6 +1,6 @@
 # High Q instructor gradebook setup
 
-The course repositories publish a numeric `highq/autograding` commit status after every push. This repository collects those statuses into one instructor-only Actions summary plus downloadable CSV, JSON and print-ready HTML files. A separate progression workflow creates the next private course repository only after the learner reaches the configured 70% pass mark.
+The course repositories publish a numeric `highq/autograding` commit status after every push. This repository collects those statuses into one instructor-only Actions summary plus downloadable CSV, JSON and print-ready HTML files. After the learner reaches the configured 70% pass mark, a separate progression workflow creates the next Academy-owned V1 repository or securely provisions the exact empty private `highq-*` repository pre-created by a V2 learner.
 
 ## Locked curriculum order
 
@@ -74,14 +74,14 @@ GitHub Actions cannot send mail from your address until an email provider authen
 
 For Gmail or Google Workspace, enable two-step verification on the sending mailbox and create an app password. In **Settings → Secrets and variables → Actions**, add these repository secrets:
 
-| Secret | Value |
-| --- | --- |
-| `REPORT_SMTP_HOST` | `smtp.gmail.com` |
-| `REPORT_SMTP_PORT` | `465` |
-| `REPORT_SMTP_SECURITY` | `ssl` for port 465, or `starttls` for port 587 |
-| `REPORT_SMTP_USERNAME` | The Gmail or Google Workspace sending address |
-| `REPORT_SMTP_PASSWORD` | Its 16-character Google app password, not the normal mailbox password |
-| `REPORT_EMAIL_FROM` | Usually the same address as `REPORT_SMTP_USERNAME` |
+| Secret                    | Value                                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| `REPORT_SMTP_HOST`        | `smtp.gmail.com`                                                                         |
+| `REPORT_SMTP_PORT`        | `465`                                                                                    |
+| `REPORT_SMTP_SECURITY`    | `ssl` for port 465, or `starttls` for port 587                                           |
+| `REPORT_SMTP_USERNAME`    | The Gmail or Google Workspace sending address                                            |
+| `REPORT_SMTP_PASSWORD`    | Its 16-character Google app password, not the normal mailbox password                    |
+| `REPORT_EMAIL_FROM`       | Usually the same address as `REPORT_SMTP_USERNAME`                                       |
 | `REPORT_EMAIL_RECIPIENTS` | `akintunde.dolapo1@gmail.com,highqsol@highqsolidacademy.com,highqsolidacademy@gmail.com` |
 
 Outgoing reports display **High Q Digital Training** as the sender name. Recipients are placed in `Bcc` and the visible `To` header is `undisclosed-recipients:;`, so recipients cannot see one another's email addresses.

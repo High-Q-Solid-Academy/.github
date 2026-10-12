@@ -30,12 +30,12 @@ You begin with **Git & GitHub Foundations**. You must earn at least **70/100** b
 
 Four major stage transitions also require a deployed project and human review:
 
-| Completed stage | Required deployed capstone | Unlocks |
-| --- | --- | --- |
-| HTML, CSS, JavaScript, PHP and MySQL | Full-stack website | Python |
-| Python | Production Python web application or API | React |
-| React and React TypeScript | Production frontend application | Node.js and Express |
-| Node.js and Express | Production backend API or full-stack service | AI and Prompt Engineering |
+| Completed stage                      | Required deployed capstone                   | Unlocks                   |
+| ------------------------------------ | -------------------------------------------- | ------------------------- |
+| HTML, CSS, JavaScript, PHP and MySQL | Full-stack website                           | Python                    |
+| Python                               | Production Python web application or API     | React                     |
+| React and React TypeScript           | Production frontend application              | Node.js and Express       |
+| Node.js and Express                  | Production backend API or full-stack service | AI and Prompt Engineering |
 
 At these milestones, an automated exercise score alone does not unlock the next course.
 
@@ -84,7 +84,7 @@ Never edit tests, grading scripts, workflow files, package manifests or `.highq/
 
 ## Receiving the next course
 
-After a passing pull request is approved and merged into `main`, GitHub grades `main`. The academy progression workflow then creates your next private repository and grants you access. The scheduled check runs daily; an instructor can also run it immediately.
+After a passing pull request is approved and merged into `main`, GitHub grades `main`. For Enrollment V2, create the exact empty private `highq-*` repository requested for your next course and keep the High Q GitHub App authorized; the academy progression workflow securely fills that repository after all gates pass. The scheduled check runs daily, and an instructor can also run it immediately. Legacy V1 repositories remain Academy-managed.
 
 The same process repeats for every course: learn, practise, test, push, open a pull request, receive a score, correct mistakes and pass.
 

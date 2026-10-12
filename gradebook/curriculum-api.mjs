@@ -1,34 +1,38 @@
-import process from 'node:process';
-import { enrollmentPath } from './identity.mjs';
+import process from "node:process";
+import { enrollmentPath } from "./identity.mjs";
 import {
   githubAppConfigured,
   installationForOrganization,
   installationForUser,
   installationToken,
   installationTokenForUser,
-} from './github-app.mjs';
+} from "./github-app.mjs";
 
-export const organization = process.env.CURRICULUM_ORG || 'High-Q-Solid-Academy';
+export const organization =
+  process.env.CURRICULUM_ORG || "High-Q-Solid-Academy";
 export const token = process.env.CURRICULUM_ADMIN_TOKEN;
-export const apiBase = process.env.GITHUB_API_URL || 'https://api.github.com';
+export const apiBase = process.env.GITHUB_API_URL || "https://api.github.com";
 
 export async function api(route, options = {}, authToken = token) {
-  if (!authToken) throw new Error(`Authentication token is required for ${route}.`);
+  if (!authToken)
+    throw new Error(`Authentication token is required for ${route}.`);
   const response = await fetch(`${apiBase}${route}`, {
     ...options,
     headers: {
-      Accept: 'application/vnd.github+json',
+      Accept: "application/vnd.github+json",
       Authorization: `Bearer ${authToken}`,
-      'Content-Type': 'application/json',
-      'X-GitHub-Api-Version': '2026-03-10',
-      'User-Agent': 'highq-curriculum-progression',
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2026-03-10",
+      "User-Agent": "highq-curriculum-progression",
       ...options.headers,
     },
   });
   if (response.status === 204) return null;
   const body = await response.json().catch(() => null);
   if (!response.ok) {
-    const error = new Error(`${response.status} ${response.statusText}: ${route}${body?.message ? ` — ${body.message}` : ''}`);
+    const error = new Error(
+      `${response.status} ${response.statusText}: ${route}${body?.message ? ` — ${body.message}` : ""}`,
+    );
     error.status = response.status;
     throw error;
   }
@@ -42,7 +46,9 @@ export async function apiWithToken(authToken, route, options = {}) {
 export async function listRepositories() {
   const repositories = [];
   for (let page = 1; ; page += 1) {
-    const batch = await api(`/orgs/${organization}/repos?type=all&per_page=100&page=${page}`);
+    const batch = await api(
+      `/orgs/${organization}/repos?type=all&per_page=100&page=${page}`,
+    );
     repositories.push(...batch);
     if (batch.length < 100) return repositories;
   }
@@ -58,7 +64,9 @@ export function repositoryOwner(repository) {
 }
 
 export function repositoryFullName(repository) {
-  return repository?.full_name || `${repositoryOwner(repository)}/${repository.name}`;
+  return (
+    repository?.full_name || `${repositoryOwner(repository)}/${repository.name}`
+  );
 }
 
 export async function repositoryToken(repository) {
@@ -79,7 +87,7 @@ export async function repositoryToken(repository) {
   return (await installationTokenForUser(owner)).token;
 }
 
-export async function repoApi(repository, suffix = '', options = {}) {
+export async function repoApi(repository, suffix = "", options = {}) {
   const owner = repositoryOwner(repository);
   const authToken = await repositoryToken(repository);
   return api(
@@ -92,7 +100,11 @@ export async function repoApi(repository, suffix = '', options = {}) {
 const delay = (milliseconds) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 
-export async function waitForRepositoryReady(owner, repository, authToken = token) {
+export async function waitForRepositoryReady(
+  owner,
+  repository,
+  authToken = token,
+) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     try {
       const details = await api(
@@ -100,7 +112,7 @@ export async function waitForRepositoryReady(owner, repository, authToken = toke
         {},
         authToken,
       );
-      const branch = details.default_branch || 'main';
+      const branch = details.default_branch || "main";
       await api(
         `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/git/ref/heads/${encodeURIComponent(branch)}`,
         {},
@@ -112,7 +124,9 @@ export async function waitForRepositoryReady(owner, repository, authToken = toke
       await delay(1500);
     }
   }
-  throw new Error(`${owner}/${repository} was created but its default branch did not become available in time.`);
+  throw new Error(
+    `${owner}/${repository} was created but its default branch did not become available in time.`,
+  );
 }
 
 export async function waitForTemplateReady(repository) {
@@ -122,12 +136,14 @@ export async function waitForTemplateReady(repository) {
 export async function writeEnrollment(
   repository,
   enrollment,
-  branch = 'main',
+  branch = "main",
   options = {},
 ) {
   const owner = options.owner || organization;
   const authToken = options.authToken || token;
-  const content = Buffer.from(`${JSON.stringify(enrollment, null, 2)}\n`).toString('base64');
+  const content = Buffer.from(
+    `${JSON.stringify(enrollment, null, 2)}\n`,
+  ).toString("base64");
   let sha = null;
   try {
     const existing = await api(
@@ -143,9 +159,9 @@ export async function writeEnrollment(
   await api(
     `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/contents/${enrollmentPath()}`,
     {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({
-        message: `${sha ? 'Update' : 'Record'} enrollment identity for ${enrollment.realName}`,
+        message: `${sha ? "Update" : "Record"} enrollment identity for ${enrollment.realName}`,
         content,
         branch,
         ...(sha ? { sha } : {}),
@@ -156,16 +172,16 @@ export async function writeEnrollment(
 }
 
 async function applyCourseProtection(owner, repository, branch, authToken) {
-  let protection = 'enabled';
+  let protection = "enabled";
   try {
     await api(
       `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/branches/${encodeURIComponent(branch)}/protection`,
       {
-        method: 'PUT',
+        method: "PUT",
         body: JSON.stringify({
           required_status_checks: {
             strict: true,
-            contexts: ['Calculate course score'],
+            contexts: ["Calculate course score"],
           },
           enforce_admins: true,
           required_pull_request_reviews: {
@@ -189,9 +205,9 @@ async function applyCourseProtection(owner, repository, branch, authToken) {
 
 export function learnerOwnedRepositoryName(course) {
   const base = String(course.template || course.id)
-    .replace(/^course-/, '')
-    .replace(/[^a-z0-9-]+/gi, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/^course-/, "")
+    .replace(/[^a-z0-9-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
     .toLowerCase();
   return `highq-${base}`;
 }
@@ -204,7 +220,7 @@ async function copyPrivateTemplateToLearnerRepository(
   targetBranch,
 ) {
   const source = await api(`/repos/${organization}/${course.template}`);
-  const sourceBranch = source.default_branch || 'main';
+  const sourceBranch = source.default_branch || "main";
   const sourceRef = await api(
     `/repos/${organization}/${course.template}/git/ref/heads/${encodeURIComponent(sourceBranch)}`,
   );
@@ -215,27 +231,31 @@ async function copyPrivateTemplateToLearnerRepository(
     `/repos/${organization}/${course.template}/git/trees/${sourceCommit.tree.sha}?recursive=1`,
   );
   if (sourceTree.truncated) {
-    throw new Error(`${course.template} template tree is too large for safe learner provisioning.`);
+    throw new Error(
+      `${course.template} template tree is too large for safe learner provisioning.`,
+    );
   }
 
   const targetEntries = [];
-  for (const item of sourceTree.tree.filter((entry) => entry.type === 'blob')) {
-    const blob = await api(`/repos/${organization}/${course.template}/git/blobs/${item.sha}`);
+  for (const item of sourceTree.tree.filter((entry) => entry.type === "blob")) {
+    const blob = await api(
+      `/repos/${organization}/${course.template}/git/blobs/${item.sha}`,
+    );
     const created = await api(
       `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/blobs`,
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
-          content: String(blob.content || '').replace(/\s/g, ''),
-          encoding: 'base64',
+          content: String(blob.content || "").replace(/\s/g, ""),
+          encoding: "base64",
         }),
       },
       targetToken,
     );
     targetEntries.push({
       path: item.path,
-      mode: item.mode || '100644',
-      type: 'blob',
+      mode: item.mode || "100644",
+      type: "blob",
       sha: created.sha,
     });
   }
@@ -243,36 +263,49 @@ async function copyPrivateTemplateToLearnerRepository(
   const targetTree = await api(
     `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/trees`,
     {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ tree: targetEntries }),
     },
     targetToken,
   );
-  const currentRef = await api(
-    `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/ref/heads/${encodeURIComponent(targetBranch)}`,
-    {},
-    targetToken,
-  );
+  const currentRef = targetBranch
+    ? await api(
+        `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/ref/heads/${encodeURIComponent(targetBranch)}`,
+        {},
+        targetToken,
+      )
+    : null;
   const commit = await api(
     `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/commits`,
     {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({
         message: `Start High Q course: ${course.course}`,
         tree: targetTree.sha,
-        parents: [currentRef.object.sha],
+        parents: currentRef ? [currentRef.object.sha] : [],
       }),
     },
     targetToken,
   );
-  await api(
-    `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/refs/heads/${encodeURIComponent(targetBranch)}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify({ sha: commit.sha, force: false }),
-    },
-    targetToken,
-  );
+  if (currentRef) {
+    await api(
+      `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/refs/heads/${encodeURIComponent(targetBranch)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ sha: commit.sha, force: false }),
+      },
+      targetToken,
+    );
+  } else {
+    await api(
+      `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/refs`,
+      {
+        method: "POST",
+        body: JSON.stringify({ ref: "refs/heads/main", sha: commit.sha }),
+      },
+      targetToken,
+    );
+  }
   return commit.sha;
 }
 
@@ -289,53 +322,57 @@ export async function provisionLearnerOwnedCourse(
       repository,
       repositoryOwner: student,
       repositoryFullName: `${student}/${repository}`,
-      ownership: 'learner',
-      action: 'would-create',
+      ownership: "learner",
+      action: "would-provision",
     };
   }
 
   const installation = await installationForUser(student);
   const authToken = await installationToken(installation.id);
 
+  let target;
   try {
-    await api(
+    target = await api(
       `/repos/${encodeURIComponent(student)}/${encodeURIComponent(repository)}`,
       {},
       authToken,
     );
-    throw new Error(`${student}/${repository} already exists. High Q will not overwrite a learner-owned repository.`);
   } catch (error) {
     if (error.status !== 404) throw error;
+    throw new Error(
+      `${student}/${repository} is required before enrollment. The learner must create this exact empty private repository and grant the High Q GitHub App access, then rerun enrollment.`,
+    );
   }
-
-  const created = await api(
-    '/user/repos',
-    {
-      method: 'POST',
-      body: JSON.stringify({
-        name: repository,
-        description: `${course.course} — High Q learner-owned course repository`,
-        private: true,
-        auto_init: true,
-        has_issues: true,
-        has_projects: false,
-        has_wiki: false,
-        allow_merge_commit: true,
-        allow_squash_merge: true,
-        allow_rebase_merge: true,
-      }),
-    },
+  const owner = String(target.owner?.login || "");
+  if (owner.toLowerCase() !== String(student).toLowerCase()) {
+    throw new Error(`Repository owner mismatch for ${student}/${repository}.`);
+  }
+  if (target.private !== true) {
+    throw new Error(
+      `${student}/${repository} must be private before High Q can provision it.`,
+    );
+  }
+  const branches = await api(
+    `/repos/${encodeURIComponent(student)}/${encodeURIComponent(repository)}/branches?per_page=1`,
+    {},
     authToken,
   );
-
-  const owner = created.owner?.login || student;
-  const branch = await waitForRepositoryReady(owner, repository, authToken);
+  if (
+    Number(target.size || 0) !== 0 ||
+    !Array.isArray(branches) ||
+    branches.length !== 0
+  ) {
+    throw new Error(
+      `${student}/${repository} must be empty. High Q will never overwrite learner content.`,
+    );
+  }
+  const branch = "main";
   await copyPrivateTemplateToLearnerRepository(
     course,
     owner,
     repository,
     authToken,
-    branch,
+    null,
   );
 
   if (enrollment) {
@@ -365,9 +402,9 @@ export async function provisionLearnerOwnedCourse(
     repository,
     repositoryOwner: owner,
     repositoryFullName: `${owner}/${repository}`,
-    ownership: 'learner',
+    ownership: "learner",
     installationId: installation.id,
-    action: 'created',
+    action: "provisioned",
     protection,
     branch,
   };
@@ -381,10 +418,11 @@ export async function provisionCourse(
   options = {},
 ) {
   const repository = `${course.repositoryPrefix}${student}`;
-  if (!apply) return { repository, action: 'would-create', ownership: 'organization' };
+  if (!apply)
+    return { repository, action: "would-create", ownership: "organization" };
 
   await api(`/repos/${organization}/${course.template}/generate`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify({
       owner: organization,
       name: repository,
@@ -401,12 +439,17 @@ export async function provisionCourse(
   }
 
   if (options.beforeProtect) {
-    await options.beforeProtect({ repository, owner: organization, branch, authToken: token });
+    await options.beforeProtect({
+      repository,
+      owner: organization,
+      branch,
+      authToken: token,
+    });
   }
 
   await api(`/repos/${organization}/${repository}/collaborators/${student}`, {
-    method: 'PUT',
-    body: JSON.stringify({ permission: 'push' }),
+    method: "PUT",
+    body: JSON.stringify({ permission: "push" }),
   });
 
   const protection = await applyCourseProtection(
@@ -419,8 +462,8 @@ export async function provisionCourse(
     repository,
     repositoryOwner: organization,
     repositoryFullName: `${organization}/${repository}`,
-    ownership: 'organization',
-    action: 'created',
+    ownership: "organization",
+    action: "created",
     protection,
     branch,
   };

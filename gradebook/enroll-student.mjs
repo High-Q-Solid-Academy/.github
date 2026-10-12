@@ -1,6 +1,6 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import process from 'node:process';
+import fs from "node:fs";
+import path from "node:path";
+import process from "node:process";
 import {
   api,
   learnerOwnedRepositoryName,
@@ -8,8 +8,8 @@ import {
   provisionLearnerOwnedCourse,
   token,
   writeEnrollment,
-} from './curriculum-api.mjs';
-import { installationToken } from './github-app.mjs';
+} from "./curriculum-api.mjs";
+import { installationToken } from "./github-app.mjs";
 import {
   assertRealNameMatches,
   buildEnrollment,
@@ -19,33 +19,33 @@ import {
   enrollmentTrack,
   normalizeEmail,
   normalizeTrack,
-} from './identity.mjs';
-import { tryReadPausedRecord } from './inactivity-lib.mjs';
+} from "./identity.mjs";
+import { tryReadPausedRecord } from "./inactivity-lib.mjs";
 import {
   tryReadLearnerRegistryRecord,
   writeLearnerRegistryRecord,
-} from './learner-registry.mjs';
+} from "./learner-registry.mjs";
 
 if (!token) {
-  console.error('CURRICULUM_ADMIN_TOKEN is required.');
+  console.error("CURRICULUM_ADMIN_TOKEN is required.");
   process.exit(1);
 }
 
-const student = String(process.env.STUDENT_USERNAME || '').trim();
-const realName = String(process.env.REAL_NAME || '').trim();
+const student = String(process.env.STUDENT_USERNAME || "").trim();
+const realName = String(process.env.REAL_NAME || "").trim();
 const email = normalizeEmail(process.env.STUDENT_EMAIL);
 const track = normalizeTrack(process.env.STUDENT_TRACK, DEFAULT_TRACK);
 if (!/^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(student)) {
-  console.error('STUDENT_USERNAME must be a valid GitHub username.');
+  console.error("STUDENT_USERNAME must be a valid GitHub username.");
   process.exit(1);
 }
 if (!email) {
-  console.error('STUDENT_EMAIL is required.');
+  console.error("STUDENT_EMAIL is required.");
   process.exit(1);
 }
 
 const curriculum = JSON.parse(
-  fs.readFileSync(path.join(import.meta.dirname, 'courses.json'), 'utf8'),
+  fs.readFileSync(path.join(import.meta.dirname, "courses.json"), "utf8"),
 );
 const trackDefinition = curriculum.tracks?.[track];
 if (!trackDefinition?.courses?.length)
@@ -62,7 +62,7 @@ if (!first)
 const user = await api(`/users/${student}`);
 assertRealNameMatches(realName, user.name);
 const pausedRecord = await tryReadPausedRecord(user.id);
-if (pausedRecord?.status === 'paused') {
+if (pausedRecord?.status === "paused") {
   throw new Error(
     `@${user.login} has a preserved paused-course record for ${pausedRecord.removedCourseName}. Use Actions → Resume paused learner instead of starting a new enrollment.`,
   );
@@ -72,7 +72,9 @@ if (pausedRecord?.status === 'paused') {
 // deliberately first so the V2 launch never migrates an existing learner by accident.
 const legacyRepositoryName = `${first.repositoryPrefix}${user.login}`;
 try {
-  const repository = await api(`/repos/${organization}/${legacyRepositoryName}`);
+  const repository = await api(
+    `/repos/${organization}/${legacyRepositoryName}`,
+  );
   try {
     const file = await api(
       `/repos/${organization}/${repository.name}/contents/${enrollmentPath()}?ref=${repository.default_branch}`,
@@ -90,7 +92,7 @@ try {
       track,
       existing.enrolledAt || new Date().toISOString(),
       email,
-      { ownership: 'organization' },
+      { ownership: "organization" },
     );
     await writeEnrollment(
       repository.name,
@@ -106,14 +108,9 @@ try {
     }
     await writeEnrollment(
       repository.name,
-      buildEnrollment(
-        user,
-        realName,
-        track,
-        new Date().toISOString(),
-        email,
-        { ownership: 'organization' },
-      ),
+      buildEnrollment(user, realName, track, new Date().toISOString(), email, {
+        ownership: "organization",
+      }),
       repository.default_branch,
     );
   }
@@ -128,7 +125,7 @@ try {
 // Enrollment V2: learner-owned repository controlled through the High Q GitHub App.
 const existingRegistry = await tryReadLearnerRegistryRecord(user.id);
 if (existingRegistry) {
-  if (existingRegistry.status !== 'active') {
+  if (existingRegistry.status !== "active") {
     throw new Error(
       `@${user.login} already has a learner-owned High Q record with status ${existingRegistry.status}. Resume/reactivate that record instead of enrolling again.`,
     );
@@ -152,7 +149,7 @@ if (existingRegistry) {
     existingRegistry.enrolledAt || new Date().toISOString(),
     email,
     {
-      ownership: 'learner',
+      ownership: "learner",
       installationId: existingRegistry.installationId,
       repositoryOwner: existingRegistry.repositoryOwner,
       repositoryName: existingRegistry.repositoryName,
@@ -173,7 +170,9 @@ if (existingRegistry) {
     track,
     enrollment,
   });
-  console.log(`Updated Enrollment V2 contact record for @${user.login}; ${repository.full_name} remains the active course repository.`);
+  console.log(
+    `Updated Enrollment V2 contact record for @${user.login}; ${repository.full_name} remains the active course repository.`,
+  );
   process.exit(0);
 }
 
@@ -184,7 +183,7 @@ const preliminaryEnrollment = buildEnrollment(
   track,
   enrolledAt,
   email,
-  { ownership: 'learner' },
+  { ownership: "learner" },
 );
 const result = await provisionLearnerOwnedCourse(
   first,
@@ -192,28 +191,15 @@ const result = await provisionLearnerOwnedCourse(
   true,
   preliminaryEnrollment,
 );
-const authToken = await installationToken(result.installationId);
-const enrollment = buildEnrollment(
-  user,
-  realName,
-  track,
-  enrolledAt,
-  email,
-  {
-    ownership: 'learner',
-    installationId: result.installationId,
-    repositoryOwner: result.repositoryOwner,
-    repositoryName: result.repository,
-    repositoryFullName: result.repositoryFullName,
-  },
-);
-await writeEnrollment(result.repository, enrollment, result.branch, {
-  owner: result.repositoryOwner,
-  authToken,
-});
+const enrollment = result.enrollment;
+if (!enrollment) {
+  throw new Error(
+    "Enrollment V2 provisioning did not return its recorded enrollment.",
+  );
+}
 await writeLearnerRegistryRecord({
-  status: 'active',
-  ownership: 'learner',
+  status: "active",
+  ownership: "learner",
   githubId: user.id,
   githubLogin: user.login,
   githubLoginAtEnrollment: user.login,
@@ -237,7 +223,7 @@ await writeLearnerRegistryRecord({
       repositoryName: result.repository,
       repositoryFullName: result.repositoryFullName,
       defaultBranch: result.branch,
-      state: 'current',
+      state: "current",
       startedAt: enrolledAt,
     },
   ],
@@ -247,4 +233,6 @@ await writeLearnerRegistryRecord({
 console.log(
   `Enrollment V2 complete: ${realName} (@${user.login}) -> ${result.repositoryFullName}. The learner owns the repository; High Q retains course access through its GitHub App installation.`,
 );
-console.log(`Expected learner repository name: ${learnerOwnedRepositoryName(first)}.`);
+console.log(
+  `Expected learner repository name: ${learnerOwnedRepositoryName(first)}.`,
+);

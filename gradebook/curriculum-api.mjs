@@ -418,8 +418,17 @@ export async function provisionLearnerOwnedCourse(
     branch,
   );
 
+  let recordedEnrollment = null;
   if (enrollment) {
-    await writeEnrollment(repository, enrollment, branch, {
+    recordedEnrollment = {
+      ...enrollment,
+      ownership: "learner",
+      installationId: installation.id,
+      repositoryOwner: owner,
+      repositoryName: repository,
+      repositoryFullName: `${owner}/${repository}`,
+    };
+    await writeEnrollment(repository, recordedEnrollment, branch, {
       owner,
       authToken,
     });
@@ -450,6 +459,7 @@ export async function provisionLearnerOwnedCourse(
     action: "provisioned",
     protection,
     branch,
+    enrollment: recordedEnrollment,
   };
 }
 

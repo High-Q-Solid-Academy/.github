@@ -265,6 +265,59 @@ async function prepareEmptyLearnerRepository(owner, repository, authToken) {
   return "main";
 }
 
+async function isRecoverablePartialProvision(
+  course,
+  owner,
+  repository,
+  authToken,
+  enrollment,
+) {
+  if (!enrollment?.githubId || !enrollment?.githubLoginAtEnrollment)
+    return false;
+  try {
+    const [source, target, stored] = await Promise.all([
+      api(
+        `/repos/${organization}/${course.template}/git/trees/main?recursive=1`,
+      ),
+      api(
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/git/trees/main?recursive=1`,
+        {},
+        authToken,
+      ),
+      api(
+        `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/contents/${enrollmentPath()}?ref=main`,
+        {},
+        authToken,
+      ),
+    ]);
+    if (source.truncated || target.truncated) return false;
+    const blobs = (tree) =>
+      (tree.tree || [])
+        .filter(
+          (entry) => entry.type === "blob" && entry.path !== enrollmentPath(),
+        )
+        .map((entry) => `${entry.path}:${entry.sha}`)
+        .sort();
+    if (JSON.stringify(blobs(source)) !== JSON.stringify(blobs(target))) {
+      return false;
+    }
+    const recorded = JSON.parse(
+      Buffer.from(
+        String(stored.content || "").replace(/\s/g, ""),
+        "base64",
+      ).toString("utf8"),
+    );
+    return (
+      Number(recorded.githubId) === Number(enrollment.githubId) &&
+      String(recorded.githubLoginAtEnrollment).toLowerCase() ===
+        String(enrollment.githubLoginAtEnrollment).toLowerCase() &&
+      recorded.ownership === "learner"
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function copyPrivateTemplateToLearnerRepository(
   course,
   targetOwner,
@@ -405,18 +458,35 @@ export async function provisionLearnerOwnedCourse(
       `${student}/${repository} must be private before High Q can provision it.`,
     );
   }
-  const branch = await prepareEmptyLearnerRepository(
-    owner,
-    repository,
-    authToken,
-  );
-  await copyPrivateTemplateToLearnerRepository(
-    course,
-    owner,
-    repository,
-    authToken,
-    branch,
-  );
+  let branch;
+  let partialRecovery = false;
+  try {
+    branch = await prepareEmptyLearnerRepository(owner, repository, authToken);
+  } catch (error) {
+    partialRecovery = await isRecoverablePartialProvision(
+      course,
+      owner,
+      repository,
+      authToken,
+      enrollment,
+    );
+    if (!partialRecovery) throw error;
+    branch = "main";
+    await api(
+      `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/branches/main/protection`,
+      { method: "DELETE" },
+      authToken,
+    );
+  }
+  if (!partialRecovery) {
+    await copyPrivateTemplateToLearnerRepository(
+      course,
+      owner,
+      repository,
+      authToken,
+      branch,
+    );
+  }
 
   let recordedEnrollment = null;
   if (enrollment) {

@@ -2,20 +2,9 @@ name: Monitor learner inactivity
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/monitor-learner-inactivity.yml
-      - gradebook/monitor-inactivity.mjs
-      - gradebook/send-inactivity-email.py
-      - gradebook/inactivity-lib.mjs
-      - gradebook/managed-repositories.mjs
-      - gradebook/learner-registry.mjs
-      - gradebook/github-app.mjs
-      - gradebook/curriculum-api.mjs
-      - gradebook/courses.json
   schedule:
+    # Once daily at 06:20 UTC (07:20 Africa/Lagos). Manual dispatch remains
+    # available for controlled recovery without adding background polling.
     - cron: "20 6 * * *"
 
 permissions:

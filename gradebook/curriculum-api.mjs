@@ -7,6 +7,7 @@ import {
   installationToken,
   installationTokenForUser,
 } from "./github-app.mjs";
+import { studentBundleFiles, studentReadme, gitBlobSha } from "./v2-student-delivery.mjs";
 
 export const organization =
   process.env.CURRICULUM_ORG || "High-Q-Solid-Academy";
@@ -291,14 +292,13 @@ async function isRecoverablePartialProvision(
       ),
     ]);
     if (source.truncated || target.truncated) return false;
-    const blobs = (tree) =>
-      (tree.tree || [])
-        .filter(
-          (entry) => entry.type === "blob" && entry.path !== enrollmentPath(),
-        )
-        .map((entry) => `${entry.path}:${entry.sha}`)
-        .sort();
-    if (JSON.stringify(blobs(source)) !== JSON.stringify(blobs(target))) {
+    const expected = studentBundleFiles(course, source)
+      .map(item => item.path + ":" + item.sha);
+    expected.push("README.md:" + gitBlobSha(studentReadme(course)));
+    const actual = (target.tree || [])
+      .filter(item => item.type === "blob" && item.path !== enrollmentPath())
+      .map(item => item.path + ":" + item.sha);
+    if (JSON.stringify(expected.sort()) !== JSON.stringify(actual.sort())) {
       return false;
     }
     const recorded = JSON.parse(
@@ -343,7 +343,7 @@ async function copyPrivateTemplateToLearnerRepository(
   }
 
   const targetEntries = [];
-  for (const item of sourceTree.tree.filter((entry) => entry.type === "blob")) {
+  for (const item of studentBundleFiles(course, sourceTree)) {
     const blob = await api(
       `/repos/${organization}/${course.template}/git/blobs/${item.sha}`,
     );
@@ -365,6 +365,20 @@ async function copyPrivateTemplateToLearnerRepository(
       sha: created.sha,
     });
   }
+
+  // Generate a non-premium repository entry point; lessons remain in High Q Learn.
+  const readmeBlob = await api(
+    "/repos/" + encodeURIComponent(targetOwner) + "/" +
+      encodeURIComponent(targetRepository) + "/git/blobs",
+    {
+      method: "POST",
+      body: JSON.stringify({ content: studentReadme(course), encoding: "utf-8" }),
+    },
+    targetToken,
+  );
+  targetEntries.push({
+    path: "README.md", mode: "100644", type: "blob", sha: readmeBlob.sha
+  });
 
   const targetTree = await api(
     `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(targetRepository)}/git/trees`,

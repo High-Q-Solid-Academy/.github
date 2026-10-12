@@ -212,6 +212,59 @@ export function learnerOwnedRepositoryName(course) {
   return `highq-${base}`;
 }
 
+const provisioningBootstrapPath = ".highq/provisioning-bootstrap.txt";
+
+async function prepareEmptyLearnerRepository(owner, repository, authToken) {
+  const branches = await api(
+    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/branches?per_page=2`,
+    {},
+    authToken,
+  );
+  if (!Array.isArray(branches)) {
+    throw new Error(
+      `Could not verify whether ${owner}/${repository} is empty.`,
+    );
+  }
+  if (branches.length === 0) {
+    await api(
+      `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/contents/${provisioningBootstrapPath}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          message: "Initialize secure High Q course provisioning",
+          content: Buffer.from("High Q provisioning bootstrap\n").toString(
+            "base64",
+          ),
+          branch: "main",
+        }),
+      },
+      authToken,
+    );
+    return "main";
+  }
+  if (branches.length !== 1 || branches[0]?.name !== "main") {
+    throw new Error(
+      `${owner}/${repository} must be empty. High Q will never overwrite learner content.`,
+    );
+  }
+  const tree = await api(
+    `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/git/trees/main?recursive=1`,
+    {},
+    authToken,
+  );
+  const blobs = (tree.tree || []).filter((entry) => entry.type === "blob");
+  if (
+    tree.truncated ||
+    blobs.length !== 1 ||
+    blobs[0].path !== provisioningBootstrapPath
+  ) {
+    throw new Error(
+      `${owner}/${repository} must be empty. High Q will never overwrite learner content.`,
+    );
+  }
+  return "main";
+}
+
 async function copyPrivateTemplateToLearnerRepository(
   course,
   targetOwner,
@@ -352,27 +405,17 @@ export async function provisionLearnerOwnedCourse(
       `${student}/${repository} must be private before High Q can provision it.`,
     );
   }
-  const branches = await api(
-    `/repos/${encodeURIComponent(student)}/${encodeURIComponent(repository)}/branches?per_page=1`,
-    {},
+  const branch = await prepareEmptyLearnerRepository(
+    owner,
+    repository,
     authToken,
   );
-  if (
-    Number(target.size || 0) !== 0 ||
-    !Array.isArray(branches) ||
-    branches.length !== 0
-  ) {
-    throw new Error(
-      `${student}/${repository} must be empty. High Q will never overwrite learner content.`,
-    );
-  }
-  const branch = "main";
   await copyPrivateTemplateToLearnerRepository(
     course,
     owner,
     repository,
     authToken,
-    null,
+    branch,
   );
 
   if (enrollment) {

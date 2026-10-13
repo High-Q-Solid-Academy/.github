@@ -34,6 +34,14 @@ export function gitBlobSha(content) {
   return crypto.createHash("sha1").update("blob " + bytes.length + "\0").update(bytes).digest("hex");
 }
 
+export function hasDeclaredStudentBundle(course, selectedManifest = manifest) {
+  const rule = selectedManifest?.bundles?.[course?.id];
+  return selectedManifest?.schemaVersion === 1 &&
+    selectedManifest?.mode === "deny-unlisted" &&
+    Boolean(rule && rule.sourceTemplate === course?.template &&
+      Array.isArray(rule.files) && rule.files.length > 0);
+}
+
 export function studentBundleFiles(course, sourceTree, selectedManifest = manifest) {
   if (!course?.id || !course?.template) throw new Error("Missing course definition");
   if (selectedManifest?.schemaVersion !== 1 || selectedManifest?.mode !== "deny-unlisted") {

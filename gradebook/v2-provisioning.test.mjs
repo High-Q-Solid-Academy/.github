@@ -28,6 +28,8 @@ function createMock({missing=null,privateRepo=true,missingRepository=false}={}){
       return json({token:"mock-app-token",expires_at:"2035-01-01T00:00:00Z"},201);
     if(route==="/repos/example/highq-git-github"&&method==="GET")
       return missingRepository?json({message:"Not Found"},404):json({private:privateRepo,owner:{login:"example"},default_branch:"main"});
+    if(route==="/repos/example/highq-embedded-systems"&&method==="GET")
+      return json({private:privateRepo,owner:{login:"example"},default_branch:"main"});
     if(route==="/repos/High-Q-Solid-Academy/course-git-github")return json({default_branch:"main"});
     if(route==="/repos/High-Q-Solid-Academy/course-embedded-systems")return json({default_branch:"main"});
     if(route.endsWith("/git/ref/heads/main")&&route.startsWith("/repos/High-Q-Solid-Academy/"))

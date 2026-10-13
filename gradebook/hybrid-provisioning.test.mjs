@@ -71,6 +71,8 @@ test("V1 historical architecture is preserved; dry-run does not contact GitHub",
     const result=await provisionCourse(git,"example",false);
     assert.equal(result.ownership,"organization");
     assert.equal(result.action,"would-create");
+    const blocked=await provisionCourse(engine,"example",false);
+    assert.equal(blocked.action,"blocked-unreviewed-student-bundle");
   } finally {globalThis.fetch=before;}
 });
 test("V1 refuses unsupported course BEFORE a new organization repository is created",async()=>{

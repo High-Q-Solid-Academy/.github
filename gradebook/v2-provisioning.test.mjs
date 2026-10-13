@@ -65,6 +65,8 @@ test("V2 dry-run lists student-owned destination without any GitHub calls",async
     const output=await provisionLearnerOwnedCourse(git,"example",false);
     assert.equal(output.repositoryFullName,"example/highq-git-github");
     assert.equal(output.action,"would-provision");
+    const blocked=await provisionLearnerOwnedCourse(engine,"example",false);
+    assert.equal(blocked.action,"blocked-unreviewed-student-bundle");
   }finally{globalThis.fetch=old;}
 });
 test("V2 blocks unsupported course before modifying the learner's repository",async()=>{

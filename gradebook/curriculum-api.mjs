@@ -7,7 +7,7 @@ import {
   installationToken,
   installationTokenForUser,
 } from "./github-app.mjs";
-import { studentBundleFiles, studentReadme, gitBlobSha } from "./v2-student-delivery.mjs";
+import { studentBundleFiles, studentReadme, gitBlobSha, hasDeclaredStudentBundle } from "./v2-student-delivery.mjs";
 
 export const organization =
   process.env.CURRICULUM_ORG || "High-Q-Solid-Academy";
@@ -446,7 +446,7 @@ export async function provisionLearnerOwnedCourse(
       repositoryOwner: student,
       repositoryFullName: `${student}/${repository}`,
       ownership: "learner",
-      action: "would-provision",
+      action: hasDeclaredStudentBundle(course) ? "would-provision" : "blocked-unreviewed-student-bundle",
     };
   }
 
@@ -561,7 +561,11 @@ export async function provisionCourse(
 ) {
   const repository = `${course.repositoryPrefix}${student}`;
   if (!apply)
-    return { repository, action: "would-create", ownership: "organization" };
+    return {
+      repository,
+      action: hasDeclaredStudentBundle(course) ? "would-create" : "blocked-unreviewed-student-bundle",
+      ownership: "organization",
+    };
 
   // V1 and V2 share the SAME deny-by-default student bundle policy.
   // Never generate an organization-owned learner repo from the full premium template.

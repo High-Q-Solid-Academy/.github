@@ -318,13 +318,8 @@ async function isRecoverablePartialProvision(
   }
 }
 
-async function copyPrivateTemplateToLearnerRepository(
-  course,
-  targetOwner,
-  targetRepository,
-  targetToken,
-  targetBranch,
-) {
+async function approvedStudentBundle(course) {
+  // Validate against the reviewed allowlist BEFORE creating or initializing a repository.
   const source = await api(`/repos/${organization}/${course.template}`);
   const sourceBranch = source.default_branch || "main";
   const sourceRef = await api(
@@ -336,14 +331,22 @@ async function copyPrivateTemplateToLearnerRepository(
   const sourceTree = await api(
     `/repos/${organization}/${course.template}/git/trees/${sourceCommit.tree.sha}?recursive=1`,
   );
-  if (sourceTree.truncated) {
-    throw new Error(
-      `${course.template} template tree is too large for safe learner provisioning.`,
-    );
-  }
+  return studentBundleFiles(course, sourceTree);
+}
+
+async function copyReviewedStudentBundleToRepository(
+  course,
+  targetOwner,
+  targetRepository,
+  targetToken,
+  targetBranch,
+  approvedFiles,
+) {
+  if (!Array.isArray(approvedFiles) || approvedFiles.length === 0)
+    throw new Error("Reviewed student bundle required before any repository writes");
 
   const targetEntries = [];
-  for (const item of studentBundleFiles(course, sourceTree)) {
+  for (const item of approvedFiles) {
     const blob = await api(
       `/repos/${organization}/${course.template}/git/blobs/${item.sha}`,
     );
@@ -472,6 +475,7 @@ export async function provisionLearnerOwnedCourse(
       `${student}/${repository} must be private before High Q can provision it.`,
     );
   }
+  const reviewedFiles = await approvedStudentBundle(course);
   let branch;
   let partialRecovery = false;
   try {
@@ -493,12 +497,13 @@ export async function provisionLearnerOwnedCourse(
     );
   }
   if (!partialRecovery) {
-    await copyPrivateTemplateToLearnerRepository(
+    await copyReviewedStudentBundleToRepository(
       course,
       owner,
       repository,
       authToken,
       branch,
+      reviewedFiles,
     );
   }
 
@@ -558,18 +563,23 @@ export async function provisionCourse(
   if (!apply)
     return { repository, action: "would-create", ownership: "organization" };
 
-  await api(`/repos/${organization}/${course.template}/generate`, {
+  // V1 and V2 share the SAME deny-by-default student bundle policy.
+  // Never generate an organization-owned learner repo from the full premium template.
+  const reviewedFiles = await approvedStudentBundle(course);
+  await api(`/orgs/${organization}/repos`, {
     method: "POST",
     body: JSON.stringify({
-      owner: organization,
       name: repository,
-      description: `${course.course} — private learner repository for @${student}`,
-      include_all_branches: false,
+      description: `${course.course} — private practical workspace for @${student}`,
       private: true,
+      auto_init: true,
+      has_issues: true,
     }),
   });
-
   const branch = await waitForTemplateReady(repository);
+  await copyReviewedStudentBundleToRepository(
+    course, organization, repository, token, branch, reviewedFiles
+  );
 
   if (enrollment) {
     await writeEnrollment(repository, enrollment, branch);

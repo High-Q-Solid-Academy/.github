@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { studentBundleFiles, studentReadme, gitBlobSha } from "./v2-student-delivery.mjs";
+import { studentBundleFiles, studentReadme, gitBlobSha, hasDeclaredStudentBundle } from "./v2-student-delivery.mjs";
 
 const course = {id:"git",template:"course-git-github",course:"Git & GitHub Foundations"};
 const allowed = ["package.json",".github/workflows/verify-git.yml","exercises/lab-1-commits/student-profile.md"];
@@ -38,4 +38,11 @@ test("formative workflow is mandatory and generated README is minimal",()=>{
   assert.match(text,/High Q Learn/);
   assert.match(text,/https:\/\/highqsolidacademy.com\/learning\//);
   assert.match(gitBlobSha(text),/^[0-9a-f]{40}$/);
+});
+
+test("shared V1/V2 manifest identifies reviewed pilots without claiming other courses are ready",()=>{
+  assert.equal(hasDeclaredStudentBundle(course),true);
+  assert.equal(hasDeclaredStudentBundle({id:"html",template:"course-html-foundations"}),true);
+  assert.equal(hasDeclaredStudentBundle({id:"computer-engineering-foundations",template:"course-computer-engineering-foundations"}),false);
+  assert.equal(hasDeclaredStudentBundle({id:"git",template:"wrong-source"}),false);
 });

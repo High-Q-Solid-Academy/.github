@@ -72,13 +72,13 @@ For a brand-new learner, High Q verifies and provisions the pre-created private 
 
 `learner/highq-git-github`
 
-The repository is owned by the learner. High Q refuses public, non-empty, incorrectly named or inaccessible repositories, then imports the private curriculum through the GitHub App installation. The same rule applies to later courses: the progression workflow reports the next expected `highq-*` repository name, and provisioning continues only after the learner creates that exact empty private repository.
+The repository is owned by the learner. High Q refuses public, non-empty, incorrectly named or inaccessible repositories, then imports the approved practical-only student bundle through the GitHub App installation. Premium lessons stay inside authenticated High Q Learn. The same rule applies to later courses: the progression workflow reports the next expected `highq-*` repository name, and provisioning continues only after the learner creates that exact empty private repository.
 
 ## 6. What stays in the academy organization
 
 The source curriculum/template repositories stay private under **High-Q-Solid-Academy**.
 
-Enrollment V2 does not expose or transfer the private template repository. The provisioning workflow reads the academy template and writes a course copy into the learner-owned repository.
+Enrollment V2 does not expose or transfer the private template repository. The provisioning workflow reads the academy template and writes **only files in the reviewed student-delivery manifest** into the learner-owned repository. Premium coursebooks, full module notes and instructor resources remain controlled by the academy. Other courses must receive approved student-only bundles before enrollment can proceed.
 
 The private central registry remains:
 

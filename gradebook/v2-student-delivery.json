@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "mode": "deny-unlisted",
+  "bundles": {
+    "git": {
+      "sourceTemplate": "course-git-github",
+      "files": [
+        ".github/CODEOWNERS",
+        ".github/ISSUE_TEMPLATE/course-exercise.yml",
+        ".github/pull_request_template.md",
+        ".github/workflows/verify-git.yml",
+        ".gitignore",
+        "commitlint.config.js",
+        "package.json",
+        "scripts/publish-grade.cjs",
+        "scripts/verify-labs.js",
+        "scripts/verify-platform-evidence.cjs",
+        "scripts/tests/verify-labs.test.cjs",
+        "exercises/lab-1-commits/student-profile.md",
+        "exercises/lab-4-issues/issue-plan.md",
+        "exercises/lab-5-review-merge/review-evidence.md",
+        "exercises/lab-6-markdown-profile/profile-readme-template.md",
+        "exercises/lab-7-merge-conflict/conflict-practice.md"
+      ]
+    },
+    "html": {
+      "sourceTemplate": "course-html-foundations",
+      "files": [
+        ".github/workflows/autograding-html.yml",
+        ".gitignore",
+        "package.json",
+        "scripts/publish-grade.cjs",
+        "tests/html.test.js",
+        "exercises/exercise-1-boilerplate/index.html",
+        "exercises/exercise-2-semantics/index.html",
+        "exercises/exercise-3-forms/index.html",
+        "exercises/exercise-4-capstone/index.html"
+      ]
+    }
+  }
+}

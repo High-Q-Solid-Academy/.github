@@ -2,12 +2,12 @@
 
 ## Scope of this PR
 
-Enrollment V2 is learner-owned. Existing `gradebook/curriculum-api.mjs` copied the entire private academy template into each student's personal repository. This PR replaces that behavior with the exact paths reviewed in `gradebook/v2-student-delivery.json`. A short generated README directs students to High Q Learn for protected curriculum content.
+Enrollment V1 remains academy-owned for legacy learners, while Enrollment V2 is learner-owned. Previously, both V1 new-course generation and V2 provisioning could distribute complete premium templates. This PR replaces **new V1 and V2 course provisioning** with the same reviewed practical-only paths in `gradebook/v2-student-delivery.json`. A small generated README directs students to High Q Learn for protected curriculum content. Existing learner repositories remain unchanged.
 
 ### Approved pilots
 
-- `git` — practical student evidence files, required workflow, exercises and tests.
-- `html` — four HTML exercise starters and formative validation workflow/test dependencies.
+- `git` — practical student evidence files, required workflow, exercises and tests. Verified against the source template tree.
+- `html` — four HTML exercise starters and formative validation workflow/test dependencies. Verified against the source template tree.
 - Every other course, including Computer Engineering Foundations, **fails closed** until an individually reviewed, grader-compatible file list is approved. This is intentional. Never fall back to a full template copy.
 - The V1 path is unchanged. No existing V2 repository is rewritten, deleted or cleaned. Previously copied content cannot be remotely recalled.
 

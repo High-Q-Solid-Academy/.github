@@ -1,0 +1,58 @@
+name: Sync HIGH-Q Learn curriculum
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - gradebook/courses.json
+      - .github/workflows/sync-learn-curriculum.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: highq-learn-curriculum-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Build signed payload
+        env:
+          WEBHOOK_SECRET: ${{ secrets.HIGHQ_WEBHOOK_SECRET }}
+          REPOSITORY: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          test -n "$WEBHOOK_SECRET"
+          node <<'NODE'
+          const fs = require('fs');
+          const crypto = require('crypto');
+          const payload = JSON.stringify({
+            force_sync: true,
+            ref: `refs/heads/${process.env.REF_NAME}`,
+            after: process.env.COMMIT_SHA,
+            repository: { full_name: process.env.REPOSITORY },
+            sender: { login: process.env.ACTOR },
+            commits: []
+          });
+          fs.writeFileSync('learn-sync-payload.json', payload);
+          fs.writeFileSync('learn-sync-signature.txt', `sha256=${crypto.createHmac('sha256', process.env.WEBHOOK_SECRET).update(payload).digest('hex')}`);
+          NODE
+
+      - name: Synchronize production Learn curriculum
+        env:
+          ENDPOINT: https://learn.highqsolidacademy.com/api/curriculum-webhook.php
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-all-errors \
+            --connect-timeout 20 --max-time 180 \
+            -X POST "$ENDPOINT" \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: workflow_dispatch" \
+            -H "X-Hub-Signature-256: $(cat learn-sync-signature.txt)" \
+            --data-binary @learn-sync-payload.json

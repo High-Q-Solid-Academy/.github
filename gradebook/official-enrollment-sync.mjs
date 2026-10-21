@@ -172,7 +172,10 @@ export async function syncOfficialEnrollments(env=process.env,deps={}) {
         headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/json'},
         body:JSON.stringify(record),redirect:'error',signal:AbortSignal.timeout(15000)
       });
-      if (!reply.ok) throw Error('Website sync returned HTTP '+reply.status+' for '+record.course_id);
+      if (!reply.ok) {
+        const failure=await reply.text();
+        throw Error('Website sync returned HTTP '+reply.status+' for '+record.course_id+': '+failure.slice(0,500));
+      }
       synced++;
     }
   }

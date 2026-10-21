@@ -120,19 +120,10 @@ try {
     );
   } catch (error) {
     if (error.status !== 404) throw error;
-    if (track !== DEFAULT_TRACK) {
-      throw new Error(
-        `@${user.login} already has a legacy learner repository with no programme record. Migrate the learner explicitly before assigning Computer Engineering.`,
-      );
-    }
-    await writeEnrollment(
-      repository.name,
-      buildEnrollment(user, realName, track, new Date().toISOString(), email, {
+    const recoveredEnrollment = buildEnrollment(user, realName, track, new Date().toISOString(), email, {
         ownership: "organization",
-      }),
-      repository.default_branch,
-      { authToken: academyAuthToken },
-    );
+      });
+    await provisionCourse(first, user.login, true, recoveredEnrollment, { reuseExistingEmpty: true });
   }
   console.log(
     `@${user.login} remains on the existing organization-owned enrollment path: ${organization}/${repository.name}.`,

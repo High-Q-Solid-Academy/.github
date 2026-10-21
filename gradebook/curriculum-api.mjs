@@ -577,16 +577,28 @@ export async function provisionCourse(
   // Never generate an organization-owned learner repo from the full premium template.
   const reviewedFiles = await approvedStudentBundle(course);
   const academyAuthToken = await academyRepositoryAuthToken();
-  await api(`/orgs/${organization}/repos`, {
-    method: "POST",
-    body: JSON.stringify({
-      name: repository,
-      description: `${course.course} — private practical workspace for @${student}`,
-      private: true,
-      auto_init: true,
-      has_issues: true,
-    }),
-  });
+  try {
+    await api(`/orgs/${organization}/repos`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: repository,
+        description: `${course.course} — private practical workspace for @${student}`,
+        private: true,
+        auto_init: true,
+        has_issues: true,
+      }),
+    });
+  } catch (error) {
+    if (error.status !== 422 || options.reuseExistingEmpty !== true) throw error;
+    const [details, tree] = await Promise.all([
+      api(`/repos/${organization}/${repository}`, {}, academyAuthToken),
+      api(`/repos/${organization}/${repository}/git/trees/main?recursive=1`, {}, academyAuthToken),
+    ]);
+    const blobs = (tree.tree || []).filter((entry) => entry.type === "blob");
+    if (details.private !== true || tree.truncated || blobs.length !== 1 || blobs[0].path !== "README.md") {
+      throw new Error(`${organization}/${repository} already exists and contains learner work; automatic recovery refused.`);
+    }
+  }
   const branch = await waitForTemplateReady(repository, academyAuthToken);
   await copyReviewedStudentBundleToRepository(
     course, organization, repository, academyAuthToken, branch, reviewedFiles

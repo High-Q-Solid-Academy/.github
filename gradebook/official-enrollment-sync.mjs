@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const curriculum=JSON.parse(fs.readFileSync(path.join(import.meta.dirname,'courses.json'),'utf8'));
-export function officialPayload({repository,course,enrollment,user,grade}) {
+export function officialPayload({repository,course,enrollment,user,grade,activity}) {
   const fullName=repositoryFullName(repository);
   const v2=repository?._highq?.ownership==='learner';
   const record=repository?._highq?.registry;
@@ -62,7 +62,34 @@ export function officialPayload({repository,course,enrollment,user,grade}) {
     // It is NOT derived from learner-controlled status contexts.
     human_state:'pending',
     human_score:null,
+    last_activity_at: activity?.at || new Date(repository.created_at || enrollment.enrolledAt).toISOString(),
+    last_activity_source: activity?.source || 'repository_created',
   };
+}
+
+async function latestLearnerActivity(repository,user,request=repoApi) {
+  const candidates=[{
+    at:Date.parse(repository.created_at || ''),
+    source:'repository_created',
+  }];
+  const learnerEvents=new Set([
+    'PushEvent','PullRequestEvent','PullRequestReviewEvent',
+    'PullRequestReviewCommentEvent','IssuesEvent','IssueCommentEvent',
+    'CommitCommentEvent','CreateEvent',
+  ]);
+  for (let page=1;page<=3;page+=1) {
+    const events=await request(repository,`/events?per_page=100&page=${page}`);
+    for (const event of events) {
+      const at=Date.parse(event.created_at || '');
+      if (at && Number(event.actor?.id)===Number(user.id) && learnerEvents.has(event.type)) {
+        candidates.push({at,source:'github_'+event.type.replace(/Event$/,'').replaceAll(/([a-z])([A-Z])/g,'$1_$2').toLowerCase()});
+      }
+    }
+    if (events.length<100) break;
+  }
+  const latest=candidates.filter(item=>Number.isFinite(item.at)).sort((a,b)=>b.at-a.at)[0];
+  if (!latest) throw Error('No trustworthy repository activity timestamp');
+  return {at:new Date(latest.at).toISOString(),source:latest.source};
 }
 export async function collectOfficialPayloads(deps={}) {
   const managed=await (deps.listManagedRepositories || listManagedRepositories)({includeInactive:true});
@@ -84,6 +111,8 @@ export async function collectOfficialPayloads(deps={}) {
       if (!enrollment?.githubId) throw Error('Enrollment has no immutable GitHub ID');
       stage='identity';
       const user=await userRequest('/user/'+Number(enrollment.githubId));
+      stage='activity';
+      const activity=await latestLearnerActivity(repository,user,makeRequest);
       stage='head';
       const head=await makeRequest(repository,'/commits/'+encodeURIComponent(repository.default_branch));
       if (!/^[0-9a-f]{40}$/.test(String(head?.sha))) throw Error('Repository HEAD not verifiable');
@@ -116,7 +145,7 @@ export async function collectOfficialPayloads(deps={}) {
         }
       }
       stage='binding';
-      const data=officialPayload({repository,course,enrollment,user,grade});
+      const data=officialPayload({repository,course,enrollment,user,grade,activity});
       payloads.push(data);
     } catch (error) {
       // Never downgrade an error to an "active/passed" student. Report only.

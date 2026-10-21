@@ -23,6 +23,14 @@ on:
         options:
           - computer-science
           - computer-engineering
+      enrollment_version:
+        description: Repository ownership model
+        required: true
+        default: v2
+        type: choice
+        options:
+          - v2
+          - v1
 
 permissions:
   contents: read
@@ -48,4 +56,5 @@ jobs:
           REAL_NAME: ${{ inputs.real_name }}
           STUDENT_EMAIL: ${{ inputs.email }}
           STUDENT_TRACK: ${{ inputs.programme }}
+          ENROLLMENT_VERSION: ${{ inputs.enrollment_version }}
         run: node gradebook/enroll-student.mjs

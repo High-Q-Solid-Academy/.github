@@ -5,6 +5,7 @@ import {
   api,
   learnerOwnedRepositoryName,
   organization,
+  provisionCourse,
   provisionLearnerOwnedCourse,
   token,
   writeEnrollment,
@@ -35,6 +36,12 @@ const student = String(process.env.STUDENT_USERNAME || "").trim();
 const realName = String(process.env.REAL_NAME || "").trim();
 const email = normalizeEmail(process.env.STUDENT_EMAIL);
 const track = normalizeTrack(process.env.STUDENT_TRACK, DEFAULT_TRACK);
+const enrollmentVersion = String(process.env.ENROLLMENT_VERSION || "v2")
+  .trim()
+  .toLowerCase();
+if (!["v1", "v2"].includes(enrollmentVersion)) {
+  throw new Error("ENROLLMENT_VERSION must be v1 or v2.");
+}
 if (!/^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(student)) {
   console.error("STUDENT_USERNAME must be a valid GitHub username.");
   process.exit(1);
@@ -68,13 +75,17 @@ if (pausedRecord?.status === "paused") {
   );
 }
 
-// Existing organization-owned learners remain on Enrollment V1. This check is
-// deliberately first so the V2 launch never migrates an existing learner by accident.
+// Never silently migrate an existing learner between ownership models.
 const legacyRepositoryName = `${first.repositoryPrefix}${user.login}`;
 try {
   const repository = await api(
     `/repos/${organization}/${legacyRepositoryName}`,
   );
+  if (enrollmentVersion !== "v1") {
+    throw new Error(
+      `@${user.login} is already enrolled as V1 in ${organization}/${repository.name}. Select V1 to update this learner.`,
+    );
+  }
   try {
     const file = await api(
       `/repos/${organization}/${repository.name}/contents/${enrollmentPath()}?ref=${repository.default_branch}`,
@@ -125,6 +136,11 @@ try {
 // Enrollment V2: learner-owned repository controlled through the High Q GitHub App.
 const existingRegistry = await tryReadLearnerRegistryRecord(user.id);
 if (existingRegistry) {
+  if (enrollmentVersion !== "v2") {
+    throw new Error(
+      `@${user.login} is already enrolled as V2 in ${existingRegistry.repositoryFullName}. Select V2 to update this learner.`,
+    );
+  }
   if (existingRegistry.status !== "active") {
     throw new Error(
       `@${user.login} already has a learner-owned High Q record with status ${existingRegistry.status}. Resume/reactivate that record instead of enrolling again.`,
@@ -177,6 +193,22 @@ if (existingRegistry) {
 }
 
 const enrolledAt = new Date().toISOString();
+if (enrollmentVersion === "v1") {
+  const enrollment = buildEnrollment(
+    user,
+    realName,
+    track,
+    enrolledAt,
+    email,
+    { ownership: "organization" },
+  );
+  const result = await provisionCourse(first, user.login, true, enrollment);
+  console.log(
+    `Enrollment V1 complete: ${realName} (@${user.login}) -> ${result.repositoryFullName}. The academy owns the private repository and the learner has collaborator access.`,
+  );
+  process.exit(0);
+}
+
 const preliminaryEnrollment = buildEnrollment(
   user,
   realName,

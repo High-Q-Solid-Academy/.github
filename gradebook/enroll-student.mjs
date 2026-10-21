@@ -3,6 +3,7 @@ import path from "node:path";
 import process from "node:process";
 import {
   api,
+  academyRepositoryAuthToken,
   learnerOwnedRepositoryName,
   organization,
   provisionCourse,
@@ -79,8 +80,11 @@ if (pausedRecord?.status === "paused") {
 // Never silently migrate an existing learner between ownership models.
 const legacyRepositoryName = `${first.repositoryPrefix}${user.login}`;
 try {
+  const academyAuthToken = await academyRepositoryAuthToken();
   const repository = await api(
     `/repos/${organization}/${legacyRepositoryName}`,
+    {},
+    academyAuthToken,
   );
   if (enrollmentVersion !== "v1") {
     throw new Error(
@@ -90,6 +94,8 @@ try {
   try {
     const file = await api(
       `/repos/${organization}/${repository.name}/contents/${enrollmentPath()}?ref=${repository.default_branch}`,
+      {},
+      academyAuthToken,
     );
     const existing = decodeEnrollment(file.content);
     const existingTrack = enrollmentTrack(existing);
@@ -110,6 +116,7 @@ try {
       repository.name,
       updatedEnrollment,
       repository.default_branch,
+      { authToken: academyAuthToken },
     );
   } catch (error) {
     if (error.status !== 404) throw error;
@@ -124,6 +131,7 @@ try {
         ownership: "organization",
       }),
       repository.default_branch,
+      { authToken: academyAuthToken },
     );
   }
   console.log(

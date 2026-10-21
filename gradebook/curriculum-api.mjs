@@ -88,6 +88,12 @@ export async function repositoryToken(repository) {
   return (await installationTokenForUser(owner)).token;
 }
 
+export async function academyRepositoryAuthToken() {
+  if (!githubAppConfigured()) return token;
+  const installation = await installationForOrganization(organization);
+  return installationToken(installation.id);
+}
+
 export async function repoApi(repository, suffix = "", options = {}) {
   const owner = repositoryOwner(repository);
   const authToken = await repositoryToken(repository);
@@ -130,8 +136,8 @@ export async function waitForRepositoryReady(
   );
 }
 
-export async function waitForTemplateReady(repository) {
-  return waitForRepositoryReady(organization, repository, token);
+export async function waitForTemplateReady(repository, authToken = token) {
+  return waitForRepositoryReady(organization, repository, authToken);
 }
 
 export async function writeEnrollment(
@@ -570,6 +576,7 @@ export async function provisionCourse(
   // V1 and V2 share the SAME deny-by-default student bundle policy.
   // Never generate an organization-owned learner repo from the full premium template.
   const reviewedFiles = await approvedStudentBundle(course);
+  const academyAuthToken = await academyRepositoryAuthToken();
   await api(`/orgs/${organization}/repos`, {
     method: "POST",
     body: JSON.stringify({
@@ -580,13 +587,13 @@ export async function provisionCourse(
       has_issues: true,
     }),
   });
-  const branch = await waitForTemplateReady(repository);
+  const branch = await waitForTemplateReady(repository, academyAuthToken);
   await copyReviewedStudentBundleToRepository(
-    course, organization, repository, token, branch, reviewedFiles
+    course, organization, repository, academyAuthToken, branch, reviewedFiles
   );
 
   if (enrollment) {
-    await writeEnrollment(repository, enrollment, branch);
+    await writeEnrollment(repository, enrollment, branch, { authToken: academyAuthToken });
   }
 
   if (options.beforeProtect) {
@@ -594,20 +601,20 @@ export async function provisionCourse(
       repository,
       owner: organization,
       branch,
-      authToken: token,
+      authToken: academyAuthToken,
     });
   }
 
   await api(`/repos/${organization}/${repository}/collaborators/${student}`, {
     method: "PUT",
     body: JSON.stringify({ permission: "push" }),
-  });
+  }, academyAuthToken);
 
   const protection = await applyCourseProtection(
     organization,
     repository,
     branch,
-    token,
+    academyAuthToken,
   );
   return {
     repository,

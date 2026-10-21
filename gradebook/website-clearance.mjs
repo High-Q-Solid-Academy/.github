@@ -58,13 +58,22 @@ export async function websiteConfirmEnrollment(payload, env = process.env) {
   if (url.protocol !== 'https:' || url.hostname !== 'learn.highqsolidacademy.com' || url.username || url.password) {
     throw new Error('Enrollment completion requires the official HIGH-Q Learn HTTPS host.');
   }
-  const response = await fetch(url, {
+  const requestOptions = {
     method: 'POST',
     headers: {Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Accept: 'application/json'},
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(20000),
-    redirect: 'error',
-  });
+    redirect: 'manual',
+  };
+  let response = await fetch(url, requestOptions);
+  if ([301, 302, 307, 308].includes(response.status)) {
+    const location = response.headers?.get?.('location');
+    const redirected = location ? new URL(location, url) : null;
+    if (!redirected || redirected.protocol !== 'https:' || redirected.hostname !== 'learn.highqsolidacademy.com' || redirected.username || redirected.password) {
+      throw new Error('Enrollment completion redirect was not an official HIGH-Q Learn HTTPS URL.');
+    }
+    response = await fetch(redirected, requestOptions);
+  }
   const body = await response.json().catch(() => null);
   if (!response.ok || !['sent', 'already_sent'].includes(body?.status)) {
     throw new Error('HIGH-Q enrollment acceptance email was not confirmed: HTTP ' + response.status + ' (' + String(body?.status || 'invalid_response') + ').');

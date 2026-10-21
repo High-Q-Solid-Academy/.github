@@ -26,6 +26,7 @@ import {
   tryReadLearnerRegistryRecord,
   writeLearnerRegistryRecord,
 } from "./learner-registry.mjs";
+import { websiteConfirmEnrollment } from "./website-clearance.mjs";
 
 if (!token) {
   console.error("CURRICULUM_ADMIN_TOKEN is required.");
@@ -128,6 +129,15 @@ try {
   console.log(
     `@${user.login} remains on the existing organization-owned enrollment path: ${organization}/${repository.name}.`,
   );
+  await websiteConfirmEnrollment({
+    github_id: user.id,
+    github_login: user.login,
+    full_name: realName,
+    email,
+    programme_track: track,
+    enrollment_version: "v1",
+    repository_full_name: `${organization}/${repository.name}`,
+  });
   process.exit(0);
 } catch (error) {
   if (error.status !== 404) throw error;
@@ -189,6 +199,15 @@ if (existingRegistry) {
   console.log(
     `Updated Enrollment V2 contact record for @${user.login}; ${repository.full_name} remains the active course repository.`,
   );
+  await websiteConfirmEnrollment({
+    github_id: user.id,
+    github_login: user.login,
+    full_name: realName,
+    email,
+    programme_track: track,
+    enrollment_version: "v2",
+    repository_full_name: repository.full_name,
+  });
   process.exit(0);
 }
 
@@ -203,6 +222,15 @@ if (enrollmentVersion === "v1") {
     { ownership: "organization" },
   );
   const result = await provisionCourse(first, user.login, true, enrollment);
+  await websiteConfirmEnrollment({
+    github_id: user.id,
+    github_login: user.login,
+    full_name: realName,
+    email,
+    programme_track: track,
+    enrollment_version: "v1",
+    repository_full_name: result.repositoryFullName,
+  });
   console.log(
     `Enrollment V1 complete: ${realName} (@${user.login}) -> ${result.repositoryFullName}. The academy owns the private repository and the learner has collaborator access.`,
   );
@@ -260,6 +288,16 @@ await writeLearnerRegistryRecord({
     },
   ],
   enrollment,
+});
+
+await websiteConfirmEnrollment({
+  github_id: user.id,
+  github_login: user.login,
+  full_name: realName,
+  email,
+  programme_track: track,
+  enrollment_version: "v2",
+  repository_full_name: result.repositoryFullName,
 });
 
 console.log(

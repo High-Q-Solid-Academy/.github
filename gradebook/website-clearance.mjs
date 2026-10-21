@@ -49,3 +49,25 @@ export async function websiteConfirmProvision({ githubId, courseId, targetCourse
     throw new Error('HIGH-Q did not confirm a successful course provision: HTTP ' + response.status);
   }
 }
+
+export async function websiteConfirmEnrollment(payload, env = process.env) {
+  const token = String(env.HIGHQ_PROGRESS_API_TOKEN || '');
+  if (token.length < 32) throw new Error('HIGHQ_PROGRESS_API_TOKEN missing: cannot send enrollment acceptance.');
+  const endpoint = String(env.HIGHQ_ENROLLMENT_COMPLETE_URL || 'https://learn.highqsolidacademy.com/api/enrollment-complete.php');
+  const url = new URL(endpoint);
+  if (url.protocol !== 'https:' || url.hostname !== 'learn.highqsolidacademy.com' || url.username || url.password) {
+    throw new Error('Enrollment completion requires the official HIGH-Q Learn HTTPS host.');
+  }
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Accept: 'application/json'},
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(20000),
+    redirect: 'error',
+  });
+  const body = await response.json().catch(() => null);
+  if (!response.ok || !['sent', 'already_sent'].includes(body?.status)) {
+    throw new Error('HIGH-Q enrollment acceptance email was not confirmed: HTTP ' + response.status + ' (' + String(body?.status || 'invalid_response') + ').');
+  }
+  return body.status;
+}

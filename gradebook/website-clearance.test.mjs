@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { websiteClearance } from './website-clearance.mjs';
+import { websiteClearance, websiteConfirmEnrollment } from './website-clearance.mjs';
 
 const query = { githubId: 1234, courseId: 'git', targetCourseId: 'html', track: 'computer-science' };
 const env = { HIGHQ_PROGRESS_API_TOKEN: 'testing_'.padEnd(40,'a') };
@@ -29,5 +29,18 @@ test('only explicit authorisation permits provisioning', async () => {
     return { ok:true, status:200, json:async () => ({ eligible:true, reason:'authorized_for_provisioning' }) };
   };
   try { assert.equal(await websiteClearance(query, env), true); }
+  finally { globalThis.fetch = previous; }
+});
+test('enrollment completion requires official Learn host', async () => {
+  await assert.rejects(websiteConfirmEnrollment({}, { ...env, HIGHQ_ENROLLMENT_COMPLETE_URL:'https://example.org/' }), /official HIGH-Q Learn/);
+});
+test('enrollment completion accepts only confirmed email delivery', async () => {
+  globalThis.fetch = async (url, opts) => {
+    assert.equal(url.hostname, 'learn.highqsolidacademy.com');
+    assert.equal(opts.method, 'POST');
+    assert.equal(opts.headers.Authorization, 'Bearer ' + env.HIGHQ_PROGRESS_API_TOKEN);
+    return { ok:true, status:200, json:async () => ({ status:'sent' }) };
+  };
+  try { assert.equal(await websiteConfirmEnrollment({github_id:1234}, env), 'sent'); }
   finally { globalThis.fetch = previous; }
 });

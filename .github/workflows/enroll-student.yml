@@ -52,6 +52,7 @@ jobs:
           HIGHQ_GITHUB_APP_ID: ${{ secrets.HIGHQ_GITHUB_APP_ID }}
           HIGHQ_GITHUB_APP_PRIVATE_KEY: ${{ secrets.HIGHQ_GITHUB_APP_PRIVATE_KEY }}
           HIGHQ_GITHUB_APP_SLUG: ${{ secrets.HIGHQ_GITHUB_APP_SLUG }}
+          HIGHQ_PROGRESS_API_TOKEN: ${{ secrets.HIGHQ_PROGRESS_API_TOKEN }}
           STUDENT_USERNAME: ${{ inputs.username }}
           REAL_NAME: ${{ inputs.real_name }}
           STUDENT_EMAIL: ${{ inputs.email }}

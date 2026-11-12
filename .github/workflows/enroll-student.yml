@@ -31,6 +31,16 @@ on:
         options:
           - v2
           - v1
+      resend_v1_invitation:
+        description: Reissue an existing V1 learner's pending GitHub collaborator invitation
+        required: false
+        default: false
+        type: boolean
+      resend_welcome_email:
+        description: Send the learner's enrollment welcome email again
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -58,4 +68,6 @@ jobs:
           STUDENT_EMAIL: ${{ inputs.email }}
           STUDENT_TRACK: ${{ inputs.programme }}
           ENROLLMENT_VERSION: ${{ inputs.enrollment_version }}
+          RESEND_V1_INVITATION: ${{ inputs.resend_v1_invitation }}
+          RESEND_WELCOME_EMAIL: ${{ inputs.resend_welcome_email }}
         run: node gradebook/enroll-student.mjs

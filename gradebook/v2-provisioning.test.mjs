@@ -15,19 +15,25 @@ const git={id:"git",template:"course-git-github",course:"Git & GitHub Foundation
 const engine={id:"embedded-systems",template:"course-embedded-systems",course:"Embedded Systems"};
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{"Content-Type":"application/json"}});
 
-function createMock({missing=null,privateRepo=true,missingRepository=false}={}){
+function createMock({missing=null,privateRepo=true,missingRepository=false,selection="all",createStatus=201}={}){
   const calls=[];
+  let created = false;
   const files=manifest.bundles.git.files.filter(x=>x!==missing);
   const sourceTree={truncated:false,tree:[...files,"COURSE_BOOK.md","VIDEO_LESSONS.md","modules/10/INSTRUCTOR_NOTES.md"]
     .map((file,i)=>({path:file,type:"blob",sha:(i+1).toString(16).padStart(40,"0"),mode:"100644"}))};
   const fetch=async(input,options={})=>{
     const url=new URL(input),route=url.pathname+url.search,method=options.method||"GET";
     calls.push({route,method,body:options.body});
-    if(route==="/users/example/installation")return json({id:42});
+    if(route==="/users/example/installation")return json({id:42,account:{login:"example",type:"User"},repository_selection:selection});
     if(route==="/app/installations/42/access_tokens"&&method==="POST")
       return json({token:"mock-app-token",expires_at:"2035-01-01T00:00:00Z"},201);
     if(route==="/repos/example/highq-git-github"&&method==="GET")
-      return missingRepository?json({message:"Not Found"},404):json({private:privateRepo,owner:{login:"example"},default_branch:"main"});
+      return missingRepository&&!created?json({message:"Not Found"},404):json({private:privateRepo,owner:{login:"example"},default_branch:"main"});
+    if(route==="/user/repos"&&method==="POST"){
+      if(createStatus!==201)return json({message:"Missing repository creation permission"},createStatus);
+      created=true;
+      return json({private:true,owner:{login:"example"},name:"highq-git-github",default_branch:null},201);
+    }
     if(route==="/repos/example/highq-embedded-systems"&&method==="GET")
       return json({private:privateRepo,owner:{login:"example"},default_branch:"main"});
     if(route==="/repos/High-Q-Solid-Academy/course-git-github")return json({default_branch:"main"});
@@ -105,5 +111,36 @@ test("V2 actually constructs a student-only Git tree without premium files",asyn
     assert.equal(mock.calls.filter(c=>/COURSE_BOOK|INSTRUCTOR_NOTES|VIDEO_LESSONS/.test(c.route)).length,0);
     assert.equal(mock.calls.filter(c=>c.method==="POST"&&c.route.endsWith("/git/blobs")).length,manifest.bundles.git.files.length+1);
     assert.equal(mock.calls.filter(c=>c.route.endsWith("/branches/main/protection")).length,1);
+  }finally{globalThis.fetch=old;}
+});
+
+test("V2 automatically creates a private repository in learner account with an authorized App",async()=>{
+  const mock=createMock({missingRepository:true}),old=globalThis.fetch;globalThis.fetch=mock.fetch;
+  try{
+    const result=await provisionLearnerOwnedCourse(git,"example",true);
+    const create=mock.calls.find(c=>c.route==="/user/repos"&&c.method==="POST");
+    assert.ok(create,"HIGH-Q must create the learner repository without student manual setup");
+    assert.equal(JSON.parse(create.body).name,"highq-git-github");
+    assert.equal(JSON.parse(create.body).private,true);
+    assert.equal(JSON.parse(create.body).auto_init,false);
+    assert.equal(result.repositoryFullName,"example/highq-git-github");
+    const sourceValidation=mock.calls.findIndex(c=>c.route.includes("/course-git-github/git/trees/"));
+    assert.ok(sourceValidation<mock.calls.indexOf(create),"source allowlist must be checked before creation");
+  }finally{globalThis.fetch=old;}
+});
+
+test("V2 denies automatic repository creation when App only has selected-repo access",async()=>{
+  const mock=createMock({missingRepository:true,selection:"selected"}),old=globalThis.fetch;globalThis.fetch=mock.fetch;
+  try{
+    await assert.rejects(provisionLearnerOwnedCourse(git,"example",true),/all repositories/);
+    assert.equal(mock.calls.some(c=>c.route==="/user/repos"),false);
+  }finally{globalThis.fetch=old;}
+});
+
+test("V2 surfaces missing repository-creation permission without modifying learner files",async()=>{
+  const mock=createMock({missingRepository:true,createStatus:403}),old=globalThis.fetch;globalThis.fetch=mock.fetch;
+  try{
+    await assert.rejects(provisionLearnerOwnedCourse(git,"example",true),/Repository creation \(write\)/);
+    assert.equal(mock.calls.some(c=>c.route.includes("/contents/.highq/")),false);
   }finally{globalThis.fetch=old;}
 });

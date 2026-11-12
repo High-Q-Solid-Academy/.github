@@ -41,6 +41,11 @@ const track = normalizeTrack(process.env.STUDENT_TRACK, DEFAULT_TRACK);
 const enrollmentVersion = String(process.env.ENROLLMENT_VERSION || "v2")
   .trim()
   .toLowerCase();
+const reissueV1Invitation = String(process.env.RESEND_V1_INVITATION || "").toLowerCase() === "true";
+const resendWelcomeEmail = String(process.env.RESEND_WELCOME_EMAIL || "").toLowerCase() === "true";
+if (reissueV1Invitation && enrollmentVersion !== "v1") {
+  throw new Error("Only an existing V1 learner can have a collaborator invitation reissued.");
+}
 if (!["v1", "v2"].includes(enrollmentVersion)) {
   throw new Error("ENROLLMENT_VERSION must be v1 or v2.");
 }
@@ -125,6 +130,28 @@ try {
       });
     await provisionCourse(first, user.login, true, recoveredEnrollment, { reuseExistingEmpty: true });
   }
+  // PUT may return 204 for a pending invitation without sending a new
+  // notification; reissue only after an explicit admin request.
+  if (reissueV1Invitation) {
+    const pending = await api(
+      `/repos/${organization}/${repository.name}/invitations?per_page=100`,
+      {},
+      academyAuthToken,
+    );
+    const matches = Array.isArray(pending) ? pending.filter(
+      invitation => String(invitation.invitee?.login || "").toLowerCase() === user.login.toLowerCase(),
+    ) : [];
+    for (const invitation of matches) {
+      await api(
+        `/repos/${organization}/${repository.name}/invitations/${invitation.id}`,
+        { method: "DELETE" },
+        academyAuthToken,
+      );
+    }
+    console.log(matches.length
+      ? `Revoked ${matches.length} pending invitation(s) for @${user.login} before safe reissue.`
+      : `No pending invitation found for @${user.login}; existing access will be verified.`);
+  }
   // Re-running enrollment must repair a revoked collaborator invitation or
   // access grant; updating enrollment metadata alone does not restore access.
   const collaborator = await api(
@@ -146,6 +173,8 @@ try {
     programme_track: track,
     enrollment_version: "v1",
     repository_full_name: `${organization}/${repository.name}`,
+    resend_welcome_email: resendWelcomeEmail,
+    resend_request_id: resendWelcomeEmail ? String(process.env.GITHUB_RUN_ID || "") : "",
   });
   process.exit(0);
 } catch (error) {
@@ -216,6 +245,8 @@ if (existingRegistry) {
     programme_track: track,
     enrollment_version: "v2",
     repository_full_name: repository.full_name,
+    resend_welcome_email: resendWelcomeEmail,
+    resend_request_id: resendWelcomeEmail ? String(process.env.GITHUB_RUN_ID || "") : "",
   });
   process.exit(0);
 }
@@ -239,6 +270,8 @@ if (enrollmentVersion === "v1") {
     programme_track: track,
     enrollment_version: "v1",
     repository_full_name: result.repositoryFullName,
+    resend_welcome_email: resendWelcomeEmail,
+    resend_request_id: resendWelcomeEmail ? String(process.env.GITHUB_RUN_ID || "") : "",
   });
   console.log(
     `Enrollment V1 complete: ${realName} (@${user.login}) -> ${result.repositoryFullName}. The academy owns the private repository and the learner has collaborator access.`,
@@ -307,6 +340,8 @@ await websiteConfirmEnrollment({
   programme_track: track,
   enrollment_version: "v2",
   repository_full_name: result.repositoryFullName,
+  resend_welcome_email: resendWelcomeEmail,
+  resend_request_id: resendWelcomeEmail ? String(process.env.GITHUB_RUN_ID || "") : "",
 });
 
 console.log(

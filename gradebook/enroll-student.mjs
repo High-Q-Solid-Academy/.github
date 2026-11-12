@@ -125,6 +125,16 @@ try {
       });
     await provisionCourse(first, user.login, true, recoveredEnrollment, { reuseExistingEmpty: true });
   }
+  // Re-running enrollment must repair a revoked collaborator invitation or
+  // access grant; updating enrollment metadata alone does not restore access.
+  const collaborator = await api(
+    `/repos/${organization}/${repository.name}/collaborators/${encodeURIComponent(user.login)}`,
+    { method: "PUT", body: JSON.stringify({ permission: "push" }) },
+    academyAuthToken,
+  );
+  console.log(collaborator?.id
+    ? `A new GitHub collaborator invitation was created for @${user.login}.`
+    : `GitHub confirmed collaborator access or an existing pending invitation for @${user.login}.`);
   console.log(
     `@${user.login} remains on the existing organization-owned enrollment path: ${organization}/${repository.name}.`,
   );

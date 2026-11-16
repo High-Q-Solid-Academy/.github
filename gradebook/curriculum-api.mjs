@@ -456,21 +456,64 @@ export async function provisionLearnerOwnedCourse(
     };
   }
 
+  // Review the delivery allowlist before we create anything in a learner account.
+  const reviewedFiles = await approvedStudentBundle(course);
   const installation = await installationForUser(student);
+  if (String(installation.account?.login || "").toLowerCase() !== student.toLowerCase()
+      || String(installation.account?.type || "") !== "User") {
+    throw new Error(`High Q GitHub App installation does not belong to @${student}.`);
+  }
   const authToken = await installationToken(installation.id);
+  const repoRoute = `/repos/${encodeURIComponent(student)}/${encodeURIComponent(repository)}`;
 
   let target;
   try {
-    target = await api(
-      `/repos/${encodeURIComponent(student)}/${encodeURIComponent(repository)}`,
-      {},
-      authToken,
-    );
+    target = await api(repoRoute, {}, authToken);
   } catch (error) {
     if (error.status !== 404) throw error;
-    throw new Error(
-      `${student}/${repository} is required before enrollment. The learner must create this exact empty private repository and grant the High Q GitHub App access, then rerun enrollment.`,
-    );
+    // V2 promises an automatically created, learner-owned private repository.
+    // The learner authorizes this once by installing the GitHub App with access
+    // to all repositories and Repository creation (write) permission.
+    if (installation.repository_selection !== "all") {
+      throw new Error(
+        `@${student} must grant the High Q GitHub App access to all repositories before HIGH-Q can create ${repository} automatically. No repository was created.`,
+      );
+    }
+    try {
+      target = await api("/user/repos", {
+        method: "POST",
+        body: JSON.stringify({
+          name: repository,
+          description: `${course.course} — private High Q practical workspace`,
+          private: true,
+          auto_init: false,
+          has_issues: true,
+        }),
+      }, authToken);
+    } catch (createError) {
+      if (createError.status === 422) {
+        // A concurrent enrollment might have created it. Recheck instead of
+        // replacing or modifying another existing student repository.
+        try {
+          target = await api(repoRoute, {}, authToken);
+        } catch {
+          throw new Error(`Unable to create ${student}/${repository}; the name may already exist or the High Q App cannot access it.`);
+        }
+      } else if ([401, 403, 404].includes(createError.status)) {
+        throw new Error(
+          `HIGH-Q cannot create a repository under @${student}. Enable Repository creation (write) for the High Q GitHub App, approve the permission change and retry enrollment. GitHub returned ${createError.status}.`,
+        );
+      } else {
+        throw createError;
+      }
+    }
+    // A successful create is not sufficient if the App cannot access the new
+    // repository (e.g. a restricted installation).
+    try {
+      target = await api(repoRoute, {}, authToken);
+    } catch {
+      throw new Error(`Repository ${student}/${repository} was created, but the GitHub App cannot access it. Grant the app access to the repository and rerun enrollment; do not create a second repository.`);
+    }
   }
   const owner = String(target.owner?.login || "");
   if (owner.toLowerCase() !== String(student).toLowerCase()) {
@@ -481,7 +524,6 @@ export async function provisionLearnerOwnedCourse(
       `${student}/${repository} must be private before High Q can provision it.`,
     );
   }
-  const reviewedFiles = await approvedStudentBundle(course);
   let branch;
   let partialRecovery = false;
   try {

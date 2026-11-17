@@ -36,7 +36,8 @@ test("formative workflow is mandatory and generated README is minimal",()=>{
   assert.throws(()=>studentBundleFiles(course,tree(),rule(["package.json"])),/formative workflow/);
   const text=studentReadme(course);
   assert.match(text,/High Q Learn/);
-  assert.match(text,/https:\/\/highqsolidacademy.com\/learning\//);
+  assert.match(text,/https:\/\/learn\.highqsolidacademy\.com\/login/);
+  assert.doesNotMatch(text,/https:\/\/highqsolidacademy\.com\/learning\//);
   assert.match(gitBlobSha(text),/^[0-9a-f]{40}$/);
 });
 

@@ -21,7 +21,7 @@ export function studentReadme(course) {
     "Course: " + course.course,
     "",
     "This learner-owned repository contains your practical files, not the academy coursebook.",
-    "Sign in at https://highqsolidacademy.com/learning/ to read your lessons and videos.",
+    "Sign in at https://learn.highqsolidacademy.com/login to read your lessons and videos.",
     "Create a feature branch, complete your work, push changes and request review.",
     "Local or GitHub Actions checks provide feedback; only HIGH-Q can confirm official results.",
     "Do not publish premium lessons, passwords, tokens, or private personal information.",

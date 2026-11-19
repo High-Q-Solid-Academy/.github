@@ -7,6 +7,10 @@ on:
         description: Type DISENROLL SELECTED to confirm the checked learners
         required: true
         type: string
+      username:
+        description: Optional: limit this run to one learner explicitly approved in HIGH-Q Admin. Leave empty for checked learners in the private review dashboard.
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -28,6 +32,7 @@ jobs:
         env:
           CURRICULUM_ADMIN_TOKEN: ${{ secrets.CURRICULUM_ADMIN_TOKEN }}
           CURRICULUM_ORG: High-Q-Solid-Academy
+          TARGET_USERNAME: ${{ inputs.username }}
         run: node gradebook/review-selection.mjs
 
       - name: Classify selected learners by repository ownership

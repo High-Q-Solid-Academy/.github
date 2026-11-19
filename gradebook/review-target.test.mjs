@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { selectReviewUsers } from './review-target.mjs';
+const fixture='<!-- highq-inactivity-review-dashboard -->\n- [ ] @Ada-Lovelace — Git — 9 inactive days\n- [x] @bob-dev — Git — 12 inactive days\n';
+test('single admin approval is scoped and does not require selecting a separate checkbox',()=>assert.deepEqual(selectReviewUsers(fixture,'Ada-Lovelace'),['Ada-Lovelace']));
+test('bulk only reads checked users',()=>assert.deepEqual(selectReviewUsers(fixture,''),['bob-dev']));
+test('unknown learner fails closed',()=>assert.throws(()=>selectReviewUsers(fixture,'ghost-test'),/not present/));
+test('no selected learners fails closed',()=>assert.throws(()=>selectReviewUsers('- [ ] @Ada-Lovelace — Git', ''),/No learners selected/));
+test('duplicate dashboard row fails closed',()=>assert.throws(()=>selectReviewUsers(fixture+'- [ ] @Ada-Lovelace — Git','Ada-Lovelace'),/exactly once/));
+test('invalid username fails closed',()=>assert.throws(()=>selectReviewUsers(fixture,'all-learners,anything'),/Invalid target/));

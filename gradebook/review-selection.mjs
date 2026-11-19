@@ -2,6 +2,7 @@ import fs from "node:fs";
 import process from "node:process";
 import { api, organization, token } from "./curriculum-api.mjs";
 import { ensureStateRepository, STATE_REPOSITORY } from "./inactivity-lib.mjs";
+import { selectReviewUsers } from "./review-target.mjs";
 
 const REVIEW_DASHBOARD_MARKER = "<!-- highq-inactivity-review-dashboard -->";
 
@@ -24,27 +25,14 @@ async function findDashboard() {
   return dashboard;
 }
 
-function checkedUsernames(body) {
-  const usernames = [];
-  for (const match of String(body || "").matchAll(
-    /^- \[[xX]\] @([a-z\d](?:[a-z\d-]{0,37}[a-z\d])?)/gim,
-  )) {
-    usernames.push(match[1]);
-  }
-  return [...new Set(usernames.map((value) => value.trim()).filter(Boolean))];
-}
 
 const dashboard = await findDashboard();
 const clearMode = process.env.CLEAR_SELECTIONS === "1";
 
 if (!clearMode) {
-  const usernames = checkedUsernames(dashboard.body);
-  if (!usernames.length)
-    throw new Error(
-      "No learners are selected. Tick at least one checkbox in the private inactivity review issue.",
-    );
-  if (usernames.length > 50)
-    throw new Error("A maximum of 50 learners can be approved in one run.");
+  const requestedTarget = String(process.env.TARGET_USERNAME || '').trim();
+  const usernames = selectReviewUsers(dashboard.body, requestedTarget);
+  console.log(requestedTarget ? 'Admin-approved single-learner operation.' : 'Checked GitHub review dashboard operation.');
 
   const output = process.env.GITHUB_OUTPUT;
   if (!output) throw new Error("GITHUB_OUTPUT is required.");

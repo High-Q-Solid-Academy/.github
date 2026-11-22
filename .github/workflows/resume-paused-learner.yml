@@ -36,3 +36,12 @@ jobs:
           STUDENT_USERNAME: ${{ inputs.username }}
           RESUME_CONFIRMATION: ${{ inputs.confirmation }}
         run: node gradebook/resume-paused-learner.mjs
+
+      - name: Notify learner after verified resumption
+        if: success()
+        continue-on-error: true
+        env:
+          HIGHQ_LEARN_LIFECYCLE_TOKEN: ${{ secrets.HIGHQ_LEARN_LIFECYCLE_TOKEN }}
+          STUDENT_USERNAME: ${{ inputs.username }}
+          LEARNER_LIFECYCLE_ACTION: resumed
+        run: node gradebook/notify-website-lifecycle.mjs

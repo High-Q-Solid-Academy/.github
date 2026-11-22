@@ -64,6 +64,16 @@ jobs:
           DISENROLL_CONFIRMATION: ${{ inputs.confirmation }}
         run: node gradebook/approve-disenrollment.mjs
 
+
+      - name: Notify learners after verified pause/disenrollment
+        if: success()
+        continue-on-error: true
+        env:
+          HIGHQ_LEARN_LIFECYCLE_TOKEN: ${{ secrets.HIGHQ_LEARN_LIFECYCLE_TOKEN }}
+          STUDENT_USERNAMES: ${{ steps.selection.outputs.usernames }}
+          LEARNER_LIFECYCLE_ACTION: paused
+        run: node gradebook/notify-website-lifecycle.mjs
+
       - name: Clear completed selections from private review dashboard
         if: success()
         env:
